@@ -1,58 +1,23 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config();
-
-const db = require('./config/db'); // import promise-based pool
+const express = require("express");
+const bodyParser = require("body-parser");
+const productRoutes = require("./routes/products");
+const customerRoutes = require("./routes/customers");
+const userRoutes = require("./routes/users");
+const db = require("../Backend/config/db"); 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-// Routes
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Lifecare Backend API is running!',
-    status: 'success',
-    timestamp: new Date().toISOString()
-  });
-});
+// Mount product routes
+app.use("/api/products", productRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/users", userRoutes);
 
-// Health check
-app.get('/health', async (req, res) => {
-  try {
-    await db.query('SELECT 1'); // test query
-    res.json({
-      status: 'healthy',
-      db: 'connected',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    res.json({
-      status: 'unhealthy',
-      db: 'failed',
-      error: err.message,
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString()
-    });
-  }
+// Test route
+app.get("/", (req, res) => {
+  res.send("API is running...");
 });
 
 // Start server
-app.listen(PORT, async () => {
-  console.log(`🚀 Lifecare Backend server is running on port ${PORT}`);
-  console.log(`📡 API endpoint: http://localhost:${PORT}`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-
-  try {
-    await db.query('SELECT 1'); // ✅ test connection with promise pool
-    console.log('✅ MySQL connected successfully!');
-  } catch (err) {
-    console.error('❌ MySQL connection failed:', err);
-  }
-});
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
