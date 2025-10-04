@@ -71,13 +71,20 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// ✅ Delete user
+// ✅ Soft delete user
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.query("DELETE FROM users WHERE UserID = ?", [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "User not found" });
-    res.json({ message: "User deleted successfully" });
+
+    const [result] = await db.query(
+      "UPDATE Users SET is_active = FALSE WHERE User_ID = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "User marked as inactive (soft deleted) successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

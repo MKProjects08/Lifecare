@@ -56,13 +56,20 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// ✅ Delete product
+/// ✅ Soft delete product
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.query("DELETE FROM products WHERE BatchNumber = ?", [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Product not found" });
-    res.json({ message: "Product deleted successfully" });
+
+    const [result] = await db.query(
+      "UPDATE Products SET is_active = FALSE WHERE BatchNumber = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Product not found" });
+
+    res.json({ message: "Product marked as inactive (soft deleted) successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

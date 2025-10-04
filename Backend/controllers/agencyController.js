@@ -59,17 +59,21 @@ exports.updateAgency = async (req, res) => {
     }
 };
 
-// ===================== Delete Agency =====================
+// ✅ Soft delete agency (set is_active = false instead of removing)
 exports.deleteAgency = async (req, res) => {
     try {
-        const [result] = await db.query("DELETE FROM agency WHERE id=?", [req.params.id]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Agency not found" });
-        }
-
-        res.json({ message: "Agency deleted successfully" });
+      const { id } = req.params;
+      const sql = "UPDATE Agency SET is_active = FALSE WHERE Agency_ID = ?";
+      const [result] = await db.query(sql, [id]);
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Agency not found" });
+      }
+  
+      res.json({ message: "Agency deactivated (soft deleted) successfully" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err.message });
     }
-};
+  };
+  
+
