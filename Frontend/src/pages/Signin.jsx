@@ -73,7 +73,7 @@ const SignIn = () => {
         // Navigate based on role
         if (user.role === 'admin' ) {
           navigate('/dashboard');
-        } else if (user.role === 'Worker') {
+        } else if (user.role === 'worker') {
           navigate('/worker-dashboard');
         } else {
           toast.error("Invalid user role!");

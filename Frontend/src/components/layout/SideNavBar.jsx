@@ -1,53 +1,78 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  HeroiconsInboxArrowDownSolid,
-  MdiCouponOutline,
-} from "../../assets/icons/icons";
-import {
   LayoutTemplate,
-  ClipboardList,
-  Globe,
+  ReceiptText,
   Box,
-  ArrowRightLeft,
+  ShoppingCart,
+  ClipboardList,
+  Wallet,
+  AlertTriangle,
   User,
+  Building2,
   Users,
-  GalleryVerticalEnd,
-  Component,
+  Settings,
 } from "lucide-react";
 import logo from "../../assets/react.svg";
 import logoName from "../../assets/react.svg";
 
-const SideNavBar = () => {
+const adminPaths = [
+  "/dashboard",
+  "/billing",
+  "/products",
+  "/sales",
+  "/orders",
+  "/credits",
+  "/alerts",
+  "/users",
+  "/agencies",
+  "/customers",
+  "/settings",
+];
+
+const rolePermissions = {
+  admin: adminPaths,
+  Owner: adminPaths,
+  worker: [
+  "/dashboard",
+  "/billing",
+  "/products",
+  "/orders",
+  "/alerts",
+  "/settings",
+  ],
+};
+
+const ALL_ITEMS = [
+  { path: "/dashboard", label: "Dashboard", icon: LayoutTemplate },
+  { path: "/billing", label: "Billing", icon: ReceiptText },
+  { path: "/products", label: "Products", icon: Box },
+  { path: "/sales", label: "Sales", icon: ShoppingCart },
+  { path: "/orders", label: "Orders", icon: ClipboardList },
+  { path: "/credits", label: "Credits", icon: Wallet },
+  { path: "/alerts", label: "Alerts", icon: AlertTriangle },
+  { path: "/users", label: "Users", icon: User },
+  { path: "/agencies", label: "Agencies", icon: Building2 },
+  { path: "/customers", label: "Customers", icon: Users },
+  { path: "/settings", label: "Settings", icon: Settings },
+];
+
+const SideNavBar = ({ userRole = "worker" }) => {
   const location = useLocation();
 
-  const handleNavClick = (to) => {
-    if (window.innerWidth < 768) {
-      // Custom event to notify parent to hide sidebar
-      const event = new CustomEvent('hideSidebar');
-      window.dispatchEvent(event);
-    }
+  const allowedPaths = rolePermissions[userRole] || [];
+  const itemsToShow = ALL_ITEMS.filter((i) => allowedPaths.includes(i.path));
+
+  const makeHref = (path) => {
+    if (path === "/dashboard" && userRole === "worker") return "/worker-dashboard";
+    return path; // absolute paths like /products
   };
 
-  const navigationItems = [
-    { path: "/dashboard", label: "Dashboard", icon: LayoutTemplate },
-    { path: "/Biling", label: "Billing", icon: ClipboardList },
-    {
-      path: "/products",
-      label: "Products",
-      icon:  Box
-    },
-    { path: "/brands", label: "Sales", icon: Component },
-    { path: "/Orders", label: "Orders", icon: ClipboardList },
-    { path: "/brands", label: "Credits", icon: Component },
-    { path: "/brands", label: "Alerts", icon: Component },
-    { path: "/customers", label: "Users", icon: User },
-    { path: "/customers", label: "Agencies", icon: User },
-    { path: "/customers", label: "Customers", icon: User },
-    
-   
-    { path: "/manageUsers", label: "Settings", icon: Users },
-  ];
+  const isActive = (href) => {
+    if (href === "/worker-dashboard") return location.pathname === "/worker-dashboard";
+    if (href === "/dashboard") return location.pathname === "/dashboard";
+    return location.pathname === href || location.pathname.startsWith(href + "/");
+  };
 
   return (
     <div
@@ -57,47 +82,37 @@ const SideNavBar = () => {
         top-0 h-screen transition-all duration-300 overflow-y-auto z-10
       "
     >
-      <div className="">
+      <div>
         {/* Logo Section - always render on md and up */}
         <div className="hidden md:block px-4 py-4 border-gray-200 h-full">
           <div className="flex items-center gap-0 mb-2 mt-2 ml-3">
-            <img
-              src={logo}
-              alt="Bereload Logo"
-              className="transition-all w-10 h-10 ml-1"
-            />
-            <img src={logoName} alt="Bereload Name" className="w-23 h-8" />
+            <img src={logo} alt="Logo" className="transition-all w-10 h-10 ml-1" />
+            <img src={logoName} alt="Name" className="w-23 h-8" />
           </div>
         </div>
 
         {/* Navigation Links */}
         <nav className="px-4 space-y-3">
-          {navigationItems.map((item) => {
-            const isActive =
-              item.path === "/products"
-                ? location.pathname.startsWith("/products")
-                : location.pathname === item.path;
+          {itemsToShow.map((item) => {
+            const href = makeHref(item.path);
+            const active = isActive(href);
             return (
               <div key={item.path} className="relative">
                 <Link
-                  id={item.path}
-                  to={item.path}
+                  id={href}
+                  to={href}
                   className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive
+                    active
                       ? "bg-[#111827] text-[#05E27E] shadow-lg"
                       : "text-gray-900 hover:bg-gray-200"
                   }`}
-                  onClick={() => handleNavClick(item.path)}
                 >
                   <item.icon
                     className={`w-6 h-6 transition-all ${
-                      isActive ? "text-[#05E27E]" : "text-gray-900"
+                      active ? "text-[#05E27E]" : "text-gray-900"
                     }`}
                   />
-
-                  <span className="ml-3 text-base font-medium">
-                    {item.label}
-                  </span>
+                  <span className="ml-3 text-base font-medium">{item.label}</span>
                 </Link>
               </div>
             );

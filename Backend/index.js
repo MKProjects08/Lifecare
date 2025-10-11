@@ -28,13 +28,13 @@ app.use('/api/auth', authRoutes);
 // Protected routes
 app.use('/api/products', 
   authMiddleware, 
-  roleMiddleware(['admin',  'Worker']), // Admin has full access
+  roleMiddleware(['admin',  'worker']), // Admin has full access
   productRoutes
 );
 
 app.use('/api/customers', 
   authMiddleware, 
-  roleMiddleware(['admin',  'Worker']), // Admin has full access
+  roleMiddleware(['admin']), // Admin has full access
   customerRoutes
 );
 
@@ -46,7 +46,7 @@ app.use('/api/users',
 
 app.use('/api/agencies', 
   authMiddleware, 
-  roleMiddleware(['admin',  'Worker']), // Admin has full access
+  roleMiddleware(['admin']), // Admin has full access
   agencyRoutes
 );
 
@@ -65,19 +65,19 @@ app.use('/api/order-items',
 // Dashboard routes
 app.get('/api/owner-dashboard', 
   authMiddleware, 
-  roleMiddleware(['admin']), // Admin and Owner access
+  roleMiddleware(['admin', 'worker']), // Admin and Owner access
   (req, res) => {
     res.json({ message: 'Welcome to Owner Dashboard', user: req.user });
   }
 );
 
-app.get('/api/worker-dashboard', 
-  authMiddleware, 
-  roleMiddleware(['Worker']), // Worker only
-  (req, res) => {
-    res.json({ message: 'Welcome to Worker Dashboard', user: req.user });
-  }
-);
+// app.get('/api/worker-dashboard', 
+//   authMiddleware, 
+//   roleMiddleware(['worker']), // Worker only
+//   (req, res) => {
+//     res.json({ message: 'Welcome to Worker Dashboard', user: req.user });
+//   }
+// );
 
 // Test route (public)
 app.get('/', (req, res) => {

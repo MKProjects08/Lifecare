@@ -16,20 +16,18 @@ const AdminLayout = () => {
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
   const username = localStorage.getItem("username") || "User";
+  const role = localStorage.getItem("role") || "worker";
 
   const user = {
     userName: username,
+    role,
   };
 
   const toggleDropdown = () => setIsDropdownVisible(!isDropdownVisible);
 
   const handleSignOut = async () => {
     try {
-      // Hardcoded response for demo - simulates successful logout
-      const response = {
-        ok: true,
-      };
-
+      const response = { ok: true };
       if (response.ok) {
         toast.success("Signed out successfully");
       } else {
@@ -39,13 +37,11 @@ const AdminLayout = () => {
       toast.error("Failed to sign out. Please try again.");
     }
 
-    // Always clear client storage and navigate regardless
     localStorage.clear();
     sessionStorage.clear();
     navigate("/signin");
   };
 
-  // Handle clicks outside the dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -62,17 +58,8 @@ const AdminLayout = () => {
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
       try {
-        // Hardcoded response for demo - simulates successful validation
-        const response = {
-          ok: true,
-        };
-
-        if (response.ok) {
-          // Simulate loading data (hardcoded, no actual calls)
-          console.log("Data loaded: Brands, Operators, Products");
-        } else {
-          throw new Error("Unauthorized");
-        }
+        const response = { ok: true };
+        if (!response.ok) throw new Error("Unauthorized");
       } catch (error) {
         localStorage.clear();
         sessionStorage.clear();
@@ -87,7 +74,7 @@ const AdminLayout = () => {
     <div className="flex w-full h-screen overflow-hidden bg-white no-scrollbar">
       {/* Desktop sidebar - always visible, full height */}
       <div className="relative overflow-visible hidden md:block flex-shrink-0 w-52">
-        <SideNavBar />
+        <SideNavBar userRole={user.role} />
       </div>
       {/* Main content area - full remaining width */}
       <div className="flex-1 min-w-0 flex flex-col transition-all duration-300 main-container overflow-x-hidden w-full">
