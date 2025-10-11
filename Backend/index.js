@@ -1,103 +1,95 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const productRoutes = require("./routes/products");
-const customerRoutes = require("./routes/customers");
-const userRoutes = require("./routes/users");
-const orderRoutes = require("./routes/orders");
-const orderItemRoutes = require("./routes/orderItems");
-const agencyRoutes = require("./routes/agencies"); // ✅ Import agency routes
-const db = require("./config/db"); // MySQL connection
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const productRoutes = require('./routes/products');
+const customerRoutes = require('./routes/customers');
+const userRoutes = require('./routes/users');
+const orderRoutes = require('./routes/orders');
+const orderItemRoutes = require('./routes/orderItems');
+const agencyRoutes = require('./routes/agencies');
+const authRoutes = require('./routes/authroute');
+const { authMiddleware, roleMiddleware } = require('./middleware/authmiddleware');
+require('dotenv').config();
 
 const app = express();
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
+
+// Middleware
 app.use(bodyParser.json());
 
-// Mount routes
-app.use("/api/products", productRoutes);
-app.use("/api/customers", customerRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/agencies", agencyRoutes); // ✅ Agency routes
-app.use("/api/orders", orderRoutes);
-app.use("/api/order-items", orderItemRoutes);
+// Public routes
+app.use('/api/auth', authRoutes);
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("API is running...");
+// Protected routes
+app.use('/api/products', 
+  authMiddleware, 
+  roleMiddleware(['admin',  'worker']), // Admin has full access
+  productRoutes
+);
+
+app.use('/api/customers', 
+  authMiddleware, 
+  roleMiddleware(['admin']), // Admin has full access
+  customerRoutes
+);
+
+app.use('/api/users', 
+  authMiddleware, 
+  roleMiddleware(['admin']), // Admin and Owner only
+  userRoutes
+);
+
+app.use('/api/agencies', 
+  authMiddleware, 
+  roleMiddleware(['admin']), // Admin has full access
+  agencyRoutes
+);
+
+app.use('/api/orders', 
+  authMiddleware, 
+  roleMiddleware(['admin',  'Worker']), // Admin has full access
+  orderRoutes
+);
+
+app.use('/api/order-items', 
+  authMiddleware, 
+  roleMiddleware(['admin', 'Worker']), // Admin has full access
+  orderItemRoutes
+);
+
+// Dashboard routes
+app.get('/api/owner-dashboard', 
+  authMiddleware, 
+  roleMiddleware(['admin', 'worker']), // Admin and Owner access
+  (req, res) => {
+    res.json({ message: 'Welcome to Owner Dashboard', user: req.user });
+  }
+);
+
+// app.get('/api/worker-dashboard', 
+//   authMiddleware, 
+//   roleMiddleware(['worker']), // Worker only
+//   (req, res) => {
+//     res.json({ message: 'Welcome to Worker Dashboard', user: req.user });
+//   }
+// );
+
+// Test route (public)
+app.get('/', (req, res) => {
+  res.send('API is running...');
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
 });
 
 // Start server
-const PORT = 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
-
-
-// ===================== Products API =====================
-// GET     http://localhost:5000/api/products         -> Get all products
-// GET     http://localhost:5000/api/products/:id     -> Get a single product
-// POST    http://localhost:5000/api/products         -> Create a new product
-// PUT     http://localhost:5000/api/products/:id     -> Update a product
-// DELETE  http://localhost:5000/api/products/:id     -> Delete a product
-
-
-// ===================== Customers API =====================
-// GET     http://localhost:5000/api/customers        -> Get all customers
-// GET     http://localhost:5000/api/customers/:id    -> Get a single customer
-// POST    http://localhost:5000/api/customers        -> Create a new customer
-// PUT     http://localhost:5000/api/customers/:id    -> Update a customer
-// DELETE  http://localhost:5000/api/customers/:id    -> Delete a customer
-
-
-// ===================== Users API =====================
-// GET     http://localhost:5000/api/users            -> Get all users
-// GET     http://localhost:5000/api/users/:id        -> Get a single user
-// POST    http://localhost:5000/api/users            -> Create a new user
-// PUT     http://localhost:5000/api/users/:id        -> Update a user
-// DELETE  http://localhost:5000/api/users/:id        -> Delete a user
-
-
-// ===================== Agency API =====================
-// GET     http://localhost:5000/api/agencies          -> Get all agencies
-// GET     http://localhost:5000/api/agencies/:id      -> Get a single agency
-// POST    http://localhost:5000/api/agencies          -> Create a new agency
-// PUT     http://localhost:5000/api/agencies/:id      -> Update an agency
-// DELETE  http://localhost:5000/api/agencies/:id      -> Delete an agency
-
-
-// ==========================
-// Orders APIs
-// ==========================
-
-// Create a new order
-// POST http://localhost:5000/api/orders
-
-// Get all orders
-// GET http://localhost:5000/api/orders
-
-// Get a single order by ID
-// GET http://localhost:5000/api/orders/:id
-
-// Update an existing order
-// PUT http://localhost:5000/api/orders/:id
-
-// Delete an order
-// DELETE http://localhost:5000/api/orders/:id
-
-
-// ==========================
-// OrderItems APIs
-// ==========================
-
-// Create a new order item
-// POST http://localhost:5000/api/order-items
-
-// Get all order items
-// GET http://localhost:5000/api/order-items
-
-// Get all items for a specific order
-// GET http://localhost:5000/api/order-items/order/:orderId
-
-// Update an existing order item
-// PUT http://localhost:5000/api/order-items/:id
-
-// Delete an order item
-// DELETE http://localhost:5000/api/order-items/:id
