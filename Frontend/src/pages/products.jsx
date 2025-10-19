@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import ProductTable from "../components/product/ProductTable";
 import ProductFilters from "../components/product/ProductFilters";
-import ProductModal from "../components/product/ProductModal";
+import SmartProductModal from "../components/product/ProductModal";
 
 const Products = () => {
   const [filters, setFilters] = useState({
@@ -10,6 +10,7 @@ const Products = () => {
     productName: ""
   });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [refreshTable, setRefreshTable] = useState(0);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -23,39 +24,10 @@ const Products = () => {
     setShowAddModal(false);
   };
 
-  const handleSaveProduct = async (productData) => {
-    try {
-      const token = localStorage.getItem('token') || 
-                   localStorage.getItem('authToken') ||
-                   sessionStorage.getItem('token') ||
-                   sessionStorage.getItem('authToken');
-
-      const response = await fetch('http://localhost:3000/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(productData)
-      });
-
-      if (response.ok) {
-        const newProduct = await response.json();
-        console.log('Product added successfully:', newProduct);
-        
-        // Close modal
-        setShowAddModal(false);
-        
-        // Refresh the product table (you might want to implement this in ProductTable)
-        // You can use a ref or callback to trigger refresh
-        window.location.reload(); // Simple refresh, consider better state management
-      } else {
-        throw new Error('Failed to add product');
-      }
-    } catch (error) {
-      console.error('Error adding product:', error);
-      alert('Error adding product. Please try again.');
-    }
+  const handleSaveProduct = (savedProduct) => {
+    // Refresh the table to show the new/updated product
+    setRefreshTable(prev => prev + 1);
+    setShowAddModal(false);
   };
 
   return (
@@ -84,14 +56,13 @@ const Products = () => {
             <h2 className="text-xl font-semibold text-gray-700 mb-4">Product List</h2>
             <ProductFilters onFilterChange={handleFilterChange} />
           </div>
-          <ProductTable filters={filters} />
+          <ProductTable filters={filters} refreshTrigger={refreshTable} />
         </div>
       </div>
 
-      {/* Add Product Modal */}
+      {/* Smart Add Product Modal */}
       {showAddModal && (
-        <ProductModal
-          mode="add"
+        <SmartProductModal
           onClose={handleCloseModal}
           onSave={handleSaveProduct}
         />

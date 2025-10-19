@@ -1,6 +1,6 @@
 // src/components/product/ProductTable.jsx
 import React, { useState, useEffect } from "react";
-import ProductModal from "./ProductModal";
+import SmartProductModal from "../product/ProductModal";
 
 const ProductTable = ({ filters }) => {
   const [products, setProducts] = useState([]);
@@ -10,6 +10,7 @@ const ProductTable = ({ filters }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("view");
   const [agencies, setAgencies] = useState([]);
+  const [agenciesLoading, setAgenciesLoading] = useState(true);
 
   // Use consistent API base URL
   const API_BASE_URL = 'http://localhost:3000/api';
@@ -24,6 +25,7 @@ const ProductTable = ({ filters }) => {
   // Fetch agencies for mapping Agency_ID to agency name
   const fetchAgencies = async () => {
     try {
+      setAgenciesLoading(true);
       const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/agencies`, {
         method: 'GET',
@@ -39,9 +41,13 @@ const ProductTable = ({ filters }) => {
         setAgencies(data);
       } else {
         console.error('Failed to fetch agencies:', response.status);
+        setAgencies([]);
       }
     } catch (error) {
       console.error('Error fetching agencies:', error);
+      setAgencies([]);
+    } finally {
+      setAgenciesLoading(false);
     }
   };
 
@@ -91,41 +97,56 @@ const ProductTable = ({ filters }) => {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchAgencies();
+    const fetchData = async () => {
+      await fetchAgencies();
+      await fetchProducts();
+    };
+    fetchData();
   }, []);
+
+  // Format date from "2025-12-30T18:30:00.000Z" to "2025-12-30"
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
+    }
+  };
 
   // Map API field names to component field names
   const mapProductToComponent = (product) => {
     if (!product) return null;
     
-    // Find agency name by Agency_ID
-    const agency = agencies.find(a => a.Agency_ID === product.Agency_ID);
-    const agencyName = agency ? agency.agencyname : `Agency ${product.Agency_ID}`;
-
-    // Format expiry date
-    let formattedExpiryDate = 'N/A';
-    if (product.expiry_date) {
-      try {
-        formattedExpiryDate = new Date(product.expiry_date).toISOString().split('T')[0];
-      } catch (e) {
-        console.error('Error formatting date:', e);
-      }
-    }
+    // Find agency by Agency_ID - handle both string and number IDs
+    const agency = agencies.find(a => 
+      a.Agency_ID == product.Agency_ID || 
+      a.agency_id == product.Agency_ID ||
+      a.id == product.Agency_ID
+    );
+    
+    const agencyName = agency ? 
+      (agency.agencyname || agency.name || `Agency ${product.Agency_ID}`) : 
+      `Agency ${product.Agency_ID}`;
 
     return {
-      id: product.Product_ID, // Keep Product_ID for React key and display
-      batchNumber: product.BatchNumber, // This is the actual identifier for API calls
+      id: product.Product_ID,
+      batchNumber: product.BatchNumber,
       name: product.productname,
       genericName: product.generic_name,
       quantity: product.quantity || 0,
-      expiryDate: formattedExpiryDate,
+      expiryDate: formatDateForInput(product.expiry_date),
       agency: agencyName,
       purchaseRate: parseFloat(product.purchase_price) || 0,
       sellingRate: parseFloat(product.selling_price) || 0,
       Agency_ID: product.Agency_ID,
       is_active: product.is_active,
-      // Keep original data for API calls
+      // Keep all original data for SmartProductModal
       _original: product
     };
   };
@@ -139,7 +160,8 @@ const ProductTable = ({ filters }) => {
   const filteredProducts = getMappedProducts().filter(product => {
     if (!product) return false;
     
-    const matchesAgency = !filters.agency || product.agency === filters.agency;
+    const matchesAgency = !filters.agency || 
+      product.agency.toLowerCase().includes(filters.agency.toLowerCase());
     const matchesProductName = !filters.productName || 
       (product.name && product.name.toLowerCase().includes(filters.productName.toLowerCase()));
     
@@ -155,15 +177,33 @@ const ProductTable = ({ filters }) => {
   }, 0);
 
   const handleView = (product) => {
-    console.log('Viewing product:', product);
-    setSelectedProduct(product);
+    console.log('Viewing product - full data:', product);
+    
+    // Prepare data in the exact format SmartProductModal expects
+    const productData = {
+      Product_ID: product.id,
+      BatchNumber: product.batchNumber,
+      productname: product.name,
+      generic_name: product.genericName,
+      quantity: product.quantity,
+      purchase_price: product.purchaseRate.toString(),
+      selling_price: product.sellingRate.toString(),
+      expiry_date: product.expiryDate, // This is already formatted correctly
+      Agency_ID: product.Agency_ID,
+      is_active: product.is_active,
+      // Include original data
+      ...product._original
+    };
+    
+    console.log('Data being sent to modal:', productData);
+    
+    setSelectedProduct(productData);
     setModalMode("view");
     setIsModalOpen(true);
   };
 
   const handleEdit = (product) => {
     console.log('Editing product:', product);
-    console.log('Product BatchNumber:', product.batchNumber);
     
     if (!product || !product.batchNumber) {
       console.error('Invalid product data for editing:', product);
@@ -171,7 +211,25 @@ const ProductTable = ({ filters }) => {
       return;
     }
     
-    setSelectedProduct(product);
+    // Prepare data in the exact format SmartProductModal expects
+    const productData = {
+      Product_ID: product.id,
+      BatchNumber: product.batchNumber,
+      productname: product.name,
+      generic_name: product.genericName,
+      quantity: product.quantity,
+      purchase_price: product.purchaseRate.toString(),
+      selling_price: product.sellingRate.toString(),
+      expiry_date: product.expiryDate, // This is already formatted correctly
+      Agency_ID: product.Agency_ID,
+      is_active: product.is_active,
+      // Include original data
+      ...product._original
+    };
+    
+    console.log('Data being sent to modal:', productData);
+    
+    setSelectedProduct(productData);
     setModalMode("edit");
     setIsModalOpen(true);
   };
@@ -202,108 +260,40 @@ const ProductTable = ({ filters }) => {
     }
   };
 
-  const handleSave = async (productData) => {
+  const handleSave = async (savedProduct) => {
     try {
-      const token = getAuthToken();
-      let response;
-
-      console.log('Saving product data:', productData);
-      console.log('Modal mode:', modalMode);
-      console.log('Selected product BatchNumber:', selectedProduct?.batchNumber);
-
+      console.log('Product saved successfully:', savedProduct);
+      
+      // Refresh the products list after successful save
+      await fetchProducts();
+      setIsModalOpen(false);
+      setSelectedProduct(null);
+      
+      // Show success message based on mode
       if (modalMode === "edit") {
-        // Update existing product - use BatchNumber as the identifier
-        const batchNumber = selectedProduct?.batchNumber;
-        
-        if (!batchNumber) {
-          throw new Error('No BatchNumber found for editing');
-        }
-        
-        // Use the correct endpoint with BatchNumber: PUT /api/products/BATCH001
-        const url = `${API_BASE_URL}/products/${batchNumber}`;
-        console.log('PUT URL:', url);
-        
-        response = await fetch(url, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(productData)
-        });
-
-      } else if (modalMode === "add") {
-        // Create new product - use POST /api/products
-        response = await fetch(`${API_BASE_URL}/products`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(productData)
-        });
-      }
-
-      if (response) {
-        const responseText = await response.text();
-        console.log('API Response status:', response.status);
-        console.log('API Response text:', responseText);
-
-        let responseData;
-        try {
-          responseData = responseText ? JSON.parse(responseText) : {};
-        } catch (e) {
-          console.error('Error parsing response:', e);
-          responseData = {};
-        }
-
-        if (response.ok) {
-          // Refresh the products list after successful save
-          fetchProducts();
-          setIsModalOpen(false);
-          setSelectedProduct(null);
-          alert('Product saved successfully!');
-        } else {
-          throw new Error(responseData.message || `Failed to save product: ${response.status} ${response.statusText}`);
-        }
+        alert('Product updated successfully!');
       } else {
-        throw new Error('No response from server');
+        alert('Product added successfully!');
       }
     } catch (err) {
-      console.error('Error saving product:', err);
-      alert(`Error saving product: ${err.message}`);
+      console.error('Error handling save:', err);
+      alert(`Error: ${err.message}`);
     }
   };
 
   const handleAddNew = () => {
-    setSelectedProduct({
-      name: "",
-      genericName: "",
-      batchNumber: "",
-      quantity: 0,
-      expiryDate: "",
-      agency: "",
-      purchaseRate: 0,
-      sellingRate: 0,
-      Agency_ID: "",
-      is_active: 1
-    });
+    setSelectedProduct(null);
     setModalMode("add");
     setIsModalOpen(true);
   };
 
   const handleRetry = () => {
     fetchProducts();
+    fetchAgencies();
   };
 
-  // Debug: Log the current state
-  useEffect(() => {
-    console.log('Products state:', products);
-    console.log('Mapped products:', getMappedProducts());
-    console.log('Filtered products:', filteredProducts);
-  }, [products, filters]);
-
-  if (loading) {
+  // Show loading if both products and agencies are loading
+  if (loading || agenciesLoading) {
     return (
       <div className="flex justify-center items-center py-8">
         <div className="text-center">
@@ -388,10 +378,10 @@ const ProductTable = ({ filters }) => {
                     {product.agency}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {product.sellingRate.toFixed(2)}
+                    ${product.sellingRate.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {calculateTotalValue(product.sellingRate, product.quantity)}
+                    ${calculateTotalValue(product.sellingRate, product.quantity)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-3">
@@ -441,7 +431,7 @@ const ProductTable = ({ filters }) => {
                 Total Stock Value:
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                {totalStockValue.toFixed(2)}
+                ${totalStockValue.toFixed(2)}
               </td>
               <td className="px-6 py-4"></td>
             </tr>
@@ -455,17 +445,14 @@ const ProductTable = ({ filters }) => {
         </div>
         <button
           onClick={handleAddNew}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
           Add New Product
         </button>
       </div>
 
       {isModalOpen && (
-        <ProductModal
+        <SmartProductModal
           product={selectedProduct}
           mode={modalMode}
           onClose={() => {
