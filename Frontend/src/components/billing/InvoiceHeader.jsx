@@ -8,6 +8,36 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
     return date.toLocaleDateString();
   };
 
+  // Helper function to get customer display name
+  const getCustomerDisplayName = (customer) => {
+    return customer.pharmacyname || customer.customername || customer.name || 'Unknown Customer';
+  };
+
+  // Helper function to get customer ID
+  const getCustomerId = (customer) => {
+    return customer.CustomerID || customer.customer_id || customer.id;
+  };
+
+  // Helper function to get salesperson display name
+  const getSalespersonDisplayName = (salesperson) => {
+    return salesperson.username || salesperson.salespersonname || salesperson.name || 'Unknown Salesperson';
+  };
+
+  // Helper function to get salesperson ID
+  const getSalespersonId = (salesperson) => {
+    return salesperson.UserID || salesperson.salesperson_id || salesperson.id;
+  };
+
+  // Helper function to get agency display name
+  const getAgencyDisplayName = (agency) => {
+    return agency.agencyname || agency.name || 'Unknown Agency';
+  };
+
+  // Helper function to get agency ID
+  const getAgencyId = (agency) => {
+    return agency.Agency_ID || agency.id;
+  };
+
   return (
     <div className="mb-8">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">Invoice Details</h2>
@@ -25,11 +55,14 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
           >
             <option value="">Select customer</option>
             {customers.map(customer => (
-              <option key={customer.customer_id || customer.id} value={customer.customer_id || customer.id}>
-                {customer.customername || customer.name}
+              <option key={getCustomerId(customer)} value={getCustomerId(customer)}>
+                {getCustomerDisplayName(customer)}
               </option>
             ))}
           </select>
+          {customers.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">No customers available</p>
+          )}
         </div>
 
         <div>
@@ -44,11 +77,14 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
           >
             <option value="">Select salesperson</option>
             {salespersons.map(salesperson => (
-              <option key={salesperson.salesperson_id || salesperson.id} value={salesperson.salesperson_id || salesperson.id}>
-                {salesperson.salespersonname || salesperson.name}
+              <option key={getSalespersonId(salesperson)} value={getSalespersonId(salesperson)}>
+                {getSalespersonDisplayName(salesperson)}
               </option>
             ))}
           </select>
+          {salespersons.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">No salespersons available</p>
+          )}
         </div>
 
         <div>
@@ -63,11 +99,14 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
           >
             <option value="">Select agency</option>
             {agencies.map(agency => (
-              <option key={agency.Agency_ID || agency.id} value={agency.Agency_ID || agency.id}>
-                {agency.agencyname || agency.name}
+              <option key={getAgencyId(agency)} value={getAgencyId(agency)}>
+                {getAgencyDisplayName(agency)}
               </option>
             ))}
           </select>
+          {agencies.length === 0 && (
+            <p className="text-xs text-red-500 mt-1">No agencies available</p>
+          )}
         </div>
 
         <div>
@@ -86,6 +125,66 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
           </div>
         </div>
       </div>
+
+      {/* Customer Details Preview */}
+      {invoiceData.customer_id && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Selected Customer Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            {(() => {
+              const selectedCustomer = customers.find(c => 
+                getCustomerId(c) === parseInt(invoiceData.customer_id)
+              );
+              return selectedCustomer ? (
+                <>
+                  <div>
+                    <span className="font-medium">Owner:</span> {selectedCustomer.owner_name}
+                  </div>
+                  <div>
+                    <span className="font-medium">Phone:</span> {selectedCustomer.phone}
+                  </div>
+                  <div>
+                    <span className="font-medium">Email:</span> {selectedCustomer.email}
+                  </div>
+                  <div>
+                    <span className="font-medium">Credits:</span> ${selectedCustomer.credits || 0}
+                  </div>
+                </>
+              ) : null;
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Agency Details Preview */}
+      {invoiceData.agency_id && (
+        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+          <h3 className="text-sm font-medium text-green-800 mb-2">Selected Agency Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            {(() => {
+              const selectedAgency = agencies.find(a => 
+                getAgencyId(a) === parseInt(invoiceData.agency_id)
+              );
+              return selectedAgency ? (
+                <>
+                  <div>
+                    <span className="font-medium">Contact:</span> {selectedAgency.contact_person}
+                  </div>
+                  <div>
+                    <span className="font-medium">Phone:</span> {selectedAgency.phone}
+                  </div>
+                  <div>
+                    <span className="font-medium">Email:</span> {selectedAgency.email}
+                  </div>
+                  <div>
+                    <span className="font-medium">Sales:</span> ${selectedAgency.sales || 0}
+                  </div>
+                </>
+              ) : null;
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

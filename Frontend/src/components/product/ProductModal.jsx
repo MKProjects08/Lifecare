@@ -1,5 +1,8 @@
 // src/components/product/SmartProductModal.jsx
 import React, { useState, useEffect } from "react";
+import { productService } from "../../services/productService";
+import { agencyService } from "../../services/agencyService";
+
 
 const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -109,31 +112,13 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
     }
   }, [mode]);
 
-  const getAuthToken = () => {
-    return localStorage.getItem('token') || 
-           localStorage.getItem('authToken') ||
-           sessionStorage.getItem('token') ||
-           sessionStorage.getItem('authToken');
-  };
-
   const fetchAgencies = async () => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://localhost:3000/api/agencies', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAgencies(data);
-        // Set default agency if available and in add mode
-        if (data.length > 0 && !formData.Agency_ID && mode === "add") {
-          setFormData(prev => ({ ...prev, Agency_ID: data[0].Agency_ID.toString() }));
-        }
+      const data = await agencyService.getAllAgencies();
+      setAgencies(data);
+      // Set default agency if available and in add mode
+      if (data.length > 0 && !formData.Agency_ID && mode === "add") {
+        setFormData(prev => ({ ...prev, Agency_ID: data[0].Agency_ID.toString() }));
       }
     } catch (error) {
       console.error('Error fetching agencies:', error);
@@ -143,35 +128,23 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
   const fetchAllProducts = async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
+      const data = await productService.getAllProducts();
+      setAllProducts(data);
       
-      const response = await fetch('http://localhost:3000/api/products?is_active=1', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAllProducts(data);
-        
-        const uniqueProducts = data.reduce((acc, product) => {
-          if (product.is_active === 1) {
-            const existing = acc.find(p => p.productname === product.productname);
-            if (!existing) {
-              acc.push({
-                productname: product.productname,
-                generic_name: product.generic_name
-              });
-            }
+      const uniqueProducts = data.reduce((acc, product) => {
+        if (product.is_active === 1) {
+          const existing = acc.find(p => p.productname === product.productname);
+          if (!existing) {
+            acc.push({
+              productname: product.productname,
+              generic_name: product.generic_name
+            });
           }
-          return acc;
-        }, []);
-        
-        setExistingProducts(uniqueProducts);
-      }
+        }
+        return acc;
+      }, []);
+      
+      setExistingProducts(uniqueProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -181,26 +154,17 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
 
   const fetchBatchesForProduct = async (productName) => {
     try {
-      const token = getAuthToken();
-      
-      const response = await fetch(`http://localhost:3000/api/products?productname=${encodeURIComponent(productName)}&is_active=1`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+      const data = await productService.getProducts({ 
+        productname: productName, 
+        is_active: 1 
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        const batches = data
-          .filter(product => product.productname === productName && product.is_active === 1)
-          .map(product => product.BatchNumber)
-          .filter((batch, index, self) => self.indexOf(batch) === index);
-        
-        setExistingBatches(batches);
-      }
+      
+      const batches = data
+        .filter(product => product.productname === productName && product.is_active === 1)
+        .map(product => product.BatchNumber)
+        .filter((batch, index, self) => self.indexOf(batch) === index);
+      
+      setExistingBatches(batches);
     } catch (error) {
       console.error('Error fetching batches:', error);
     }
@@ -335,37 +299,6 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
     }));
   };
 
-  const checkExistingProductBatch = async () => {
-    if (!formData.productname || !formData.BatchNumber) return null;
-    
-    try {
-      const token = getAuthToken();
-      
-      const response = await fetch(
-        `http://localhost:3000/api/products?productname=${encodeURIComponent(formData.productname)}&batchnumber=${encodeURIComponent(formData.BatchNumber)}&is_active=1`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.find(product => 
-          product.productname === formData.productname && 
-          product.BatchNumber === formData.BatchNumber
-        );
-      }
-    } catch (error) {
-      console.error('Error checking existing product:', error);
-    }
-    
-    return null;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -383,7 +316,10 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
         return;
       }
 
-      const existingProduct = await checkExistingProductBatch();
+      const existingProduct = await productService.checkProductBatchExists(
+        formData.productname.trim(), 
+        formData.BatchNumber.trim()
+      );
       
       let apiData = {
         productname: formData.productname.trim(),
@@ -406,13 +342,11 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
         apiData.expiry_date = null;
       }
 
+      let result;
       let method = 'POST';
-      let url = 'http://localhost:3000/api/products';
 
       if (mode === "edit" || (existingProduct && !isNewBatch && !isNewProduct)) {
         method = 'PUT';
-        // Use batch number for update
-        url = `http://localhost:3000/api/products/${formData.BatchNumber}`;
         
         if (mode === "edit") {
           const confirmUpdate = window.confirm(
@@ -424,38 +358,24 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
             return;
           }
         }
-      }
 
-      console.log('Submitting data:', { method, url, data: apiData });
-      
-      const token = getAuthToken();
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(apiData)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Product saved successfully:', result);
-        
-        let message = mode === "edit" ? 
-          `Product updated successfully!` : 
-          'Product added successfully!';
-        
-        alert(message);
-        onSave(result);
-        onClose();
+        result = await productService.updateProduct(formData.BatchNumber.trim(), apiData);
       } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to save product: ${response.status} - ${errorText}`);
+        result = await productService.createProduct(apiData);
       }
+
+      console.log('Product saved successfully:', result);
+      
+      let message = method === "PUT" ? 
+        `Product updated successfully!` : 
+        'Product added successfully!';
+      
+      alert(message);
+      onSave(result);
+      onClose();
     } catch (error) {
       console.error('Error saving product:', error);
-      alert('Error saving product. Please try again.');
+      alert(`Error saving product: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -599,7 +519,7 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
               {/* Purchase Price */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Purchase Price ($) *
+                  Purchase Price () *
                 </label>
                 <input
                   type="text"
@@ -618,7 +538,7 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
               {/* Selling Price */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Selling Price ($) *
+                  Selling Price () *
                 </label>
                 <input
                   type="text"

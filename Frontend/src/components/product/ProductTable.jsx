@@ -1,6 +1,8 @@
 // src/components/product/ProductTable.jsx
 import React, { useState, useEffect } from "react";
 import SmartProductModal from "../product/ProductModal";
+import { productService } from "../../services/productService";
+import { agencyService } from "../../services/agencyService";
 
 const ProductTable = ({ filters }) => {
   const [products, setProducts] = useState([]);
@@ -12,37 +14,13 @@ const ProductTable = ({ filters }) => {
   const [agencies, setAgencies] = useState([]);
   const [agenciesLoading, setAgenciesLoading] = useState(true);
 
-  // Use consistent API base URL
-  const API_BASE_URL = 'http://localhost:3000/api';
-
-  const getAuthToken = () => {
-    return localStorage.getItem('token') || 
-           localStorage.getItem('authToken') ||
-           sessionStorage.getItem('token') ||
-           sessionStorage.getItem('authToken');
-  };
-
   // Fetch agencies for mapping Agency_ID to agency name
   const fetchAgencies = async () => {
     try {
       setAgenciesLoading(true);
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/agencies`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Agencies fetched:', data);
-        setAgencies(data);
-      } else {
-        console.error('Failed to fetch agencies:', response.status);
-        setAgencies([]);
-      }
+      const data = await agencyService.getAllAgencies();
+      console.log('Agencies fetched:', data);
+      setAgencies(data);
     } catch (error) {
       console.error('Error fetching agencies:', error);
       setAgencies([]);
@@ -57,33 +35,7 @@ const ProductTable = ({ filters }) => {
       setLoading(true);
       setError(null);
       
-      const token = getAuthToken();
-      
-      if (!token) {
-        throw new Error('No authentication token found. Please log in.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/products`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.status === 401) {
-        throw new Error('Authentication failed. Please log in again.');
-      }
-
-      if (response.status === 403) {
-        throw new Error('Access denied. You do not have permission to view products.');
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await productService.getAllProducts();
       console.log('Products API response:', data);
       
       setProducts(data || []);
@@ -237,22 +189,9 @@ const ProductTable = ({ filters }) => {
   const handleDelete = async (batchNumber) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        const token = getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/products/${batchNumber}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          fetchProducts();
-          alert('Product deleted successfully!');
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to delete product');
-        }
+        await productService.deleteProduct(batchNumber);
+        fetchProducts();
+        alert('Product deleted successfully!');
       } catch (err) {
         console.error('Error deleting product:', err);
         alert(`Error deleting product: ${err.message}`);
@@ -378,10 +317,10 @@ const ProductTable = ({ filters }) => {
                     {product.agency}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${product.sellingRate.toFixed(2)}
+                    {product.sellingRate.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${calculateTotalValue(product.sellingRate, product.quantity)}
+                    {calculateTotalValue(product.sellingRate, product.quantity)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-3">
@@ -431,7 +370,7 @@ const ProductTable = ({ filters }) => {
                 Total Stock Value:
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                ${totalStockValue.toFixed(2)}
+                {totalStockValue.toFixed(2)}
               </td>
               <td className="px-6 py-4"></td>
             </tr>
@@ -443,12 +382,7 @@ const ProductTable = ({ filters }) => {
         <div className="text-sm text-gray-500">
           Showing {filteredProducts.length} of {getMappedProducts().length} products
         </div>
-        <button
-          onClick={handleAddNew}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Add New Product
-        </button>
+       
       </div>
 
       {isModalOpen && (

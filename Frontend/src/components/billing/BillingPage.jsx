@@ -4,6 +4,7 @@ import InvoiceHeader from "./InvoiceHeader";
 import ProductTable from "./ProductTable";
 import ProductSearchModal from "./ProductSearchModal";
 import InvoiceTotals from "./InvoiceTotals";
+import { customerService, agencyService, userService, productService } from "../../services";
 
 const BillingPage = () => {
   const [invoiceData, setInvoiceData] = useState({
@@ -19,69 +20,41 @@ const BillingPage = () => {
   const [agencies, setAgencies] = useState([]);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [discount, setDiscount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch initial data
   useEffect(() => {
-    fetchCustomers();
-    fetchSalespersons();
-    fetchAgencies();
+    fetchInitialData();
   }, []);
 
-  const getAuthToken = () => {
-    return localStorage.getItem('token') || 
-           localStorage.getItem('authToken') ||
-           sessionStorage.getItem('token') ||
-           sessionStorage.getItem('authToken');
-  };
-
-  const fetchCustomers = async () => {
+  const fetchInitialData = async () => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://localhost:3000/api/customers', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setCustomers(data);
-      }
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-    }
-  };
+      setLoading(true);
+      setError(null);
+      
+      // Fetch all data in parallel
+      const [customersData, agenciesData, usersData] = await Promise.all([
+        customerService.getAllCustomers(),
+        agencyService.getAllAgencies(),
+        userService.getAllUsers()
+      ]);
 
-  const fetchSalespersons = async () => {
-    try {
-      const token = getAuthToken();
-      const response = await fetch('http://localhost:3000/api/salespersons', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSalespersons(data);
-      }
-    } catch (error) {
-      console.error('Error fetching salespersons:', error);
-    }
-  };
+      setCustomers(customersData);
+      setAgencies(agenciesData);
+      
+      // Filter users to get salespersons (you might want to adjust this logic based on your user roles)
+      const salespersonsData = usersData.filter(user => 
+        user.role?.toLowerCase().includes('sales') || 
+        user.role?.toLowerCase().includes('user')
+      );
+      setSalespersons(salespersonsData);
 
-  const fetchAgencies = async () => {
-    try {
-      const token = getAuthToken();
-      const response = await fetch('http://localhost:3000/api/agencies', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAgencies(data);
-      }
-    } catch (error) {
-      console.error('Error fetching agencies:', error);
+    } catch (err) {
+      console.error('Error fetching initial data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -155,7 +128,7 @@ const BillingPage = () => {
     }
 
     try {
-      const token = getAuthToken();
+      setLoading(true);
       
       // Calculate free quantity discount (free items * rate)
       const freeQuantityDiscount = invoiceItems.reduce((total, item) => {
@@ -175,7 +148,10 @@ const BillingPage = () => {
         status: 'completed'
       };
 
-      const response = await fetch('http://localhost:3000/api/invoices', {
+      // Note: You'll need to create an invoiceService for this
+      // For now, using direct fetch until invoiceService is created
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/invoices`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,11 +172,14 @@ const BillingPage = () => {
           date: new Date().toISOString().split('T')[0]
         });
       } else {
-        throw new Error('Failed to create invoice');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create invoice');
       }
     } catch (error) {
       console.error('Error creating invoice:', error);
-      alert('Error creating invoice. Please try again.');
+      alert(`Error creating invoice: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -216,6 +195,39 @@ const BillingPage = () => {
       [field]: value
     }));
   };
+
+  const handleRetry = () => {
+    fetchInitialData();
+  };
+
+  if (loading && customers.length === 0 && agencies.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading billing data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && customers.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-md p-6 max-w-md mx-auto">
+            <p className="text-red-600 mb-4">Error loading billing data: {error}</p>
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -257,10 +269,13 @@ const BillingPage = () => {
           <div className="mt-8 flex justify-end">
             <button
               onClick={handleSubmitInvoice}
-              disabled={invoiceItems.length === 0}
-              className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              disabled={invoiceItems.length === 0 || loading}
+              className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-2"
             >
-              Create Invoice
+              {loading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              )}
+              {loading ? 'Creating Invoice...' : 'Create Invoice'}
             </button>
           </div>
         </div>

@@ -9,18 +9,18 @@ const InvoiceTotals = ({ grossTotal, discount, freeQuantityDiscount, netTotal, o
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-lg ml-auto">
         <div className="text-right">
           <p className="text-sm font-medium text-gray-700">Gross Total:</p>
-          <p className="text-lg font-semibold text-gray-900">${grossTotal.toFixed(2)}</p>
+          <p className="text-lg font-semibold text-gray-900">{grossTotal.toFixed(2)}</p>
         </div>
         
         <div className="text-right">
           <p className="text-sm font-medium text-gray-700">Free Qty Discount:</p>
-          <p className="text-sm text-gray-900">${freeQuantityDiscount.toFixed(2)}</p>
+          <p className="text-sm text-gray-900">{freeQuantityDiscount.toFixed(2)}</p>
         </div>
         
         <div className="text-right">
           <p className="text-sm font-medium text-gray-700">Additional Discount:</p>
           <div className="flex items-center justify-end gap-2">
-            <span className="text-gray-500">$</span>
+            <span className="text-gray-500"></span>
             <input
               type="number"
               min="0"
@@ -34,9 +34,9 @@ const InvoiceTotals = ({ grossTotal, discount, freeQuantityDiscount, netTotal, o
         
         <div className="text-right">
           <p className="text-sm font-medium text-gray-700">Total Discount:</p>
-          <p className="text-sm text-red-600">${totalDiscount.toFixed(2)}</p>
+          <p className="text-sm text-red-600">{totalDiscount.toFixed(2)}</p>
           <p className="text-sm font-medium text-gray-700 mt-2">Net Total:</p>
-          <p className="text-xl font-bold text-blue-600">${netTotal.toFixed(2)}</p>
+          <p className="text-xl font-bold text-blue-600">{netTotal.toFixed(2)}</p>
         </div>
       </div>
     </div>

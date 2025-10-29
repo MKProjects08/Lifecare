@@ -1,5 +1,6 @@
 // src/components/product/ProductFilters.jsx
 import React, { useState, useEffect } from "react";
+import { agencyService } from "../../services/agencyService";
 
 const ProductFilters = ({ onFilterChange }) => {
   const [agencies, setAgencies] = useState([]);
@@ -10,60 +11,13 @@ const ProductFilters = ({ onFilterChange }) => {
     fetchAgencies();
   }, []);
 
-  const getAuthToken = () => {
-    // Try to get token from different storage locations
-    return localStorage.getItem('token') || 
-           localStorage.getItem('authToken') ||
-           sessionStorage.getItem('token') ||
-           sessionStorage.getItem('authToken');
-  };
-
   const fetchAgencies = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const token = getAuthToken();
-      
-      if (!token) {
-        throw new Error('No authentication token found. Please log in.');
-      }
-
-      const response = await fetch('http://localhost:3000/api/agencies', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      });
-
-      if (response.status === 401) {
-        throw new Error('Authentication failed. Please log in again.');
-      }
-
-      if (response.status === 403) {
-        throw new Error('Access denied. You do not have permission to view agencies.');
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch agencies: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Agencies API response:', data); // Debug log
-      
-      // Handle the actual API response structure
-      let agenciesList = [];
-      
-      if (Array.isArray(data)) {
-        agenciesList = data;
-      } else {
-        console.warn('Unexpected API response structure:', data);
-        agenciesList = [];
-      }
-      
-      setAgencies(agenciesList);
+      const agenciesData = await agencyService.getAllAgencies();
+      setAgencies(agenciesData);
     } catch (err) {
       console.error('Error fetching agencies:', err);
       setError(err.message);
