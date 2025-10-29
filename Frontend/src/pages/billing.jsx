@@ -1,11 +1,9 @@
-import React from "react";
+// src/pages/Billing.jsx
+import React from 'react';
+import BillingPage from '../components/billing/BillingPage';
 
 const Billing = () => {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Bills</h1>
-    </div>
-  );
+  return <BillingPage />;
 };
 
 export default Billing;
