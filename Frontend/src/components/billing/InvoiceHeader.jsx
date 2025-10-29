@@ -1,7 +1,12 @@
 // src/components/billing/InvoiceHeader.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 
-const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoiceDataChange }) => {
+const InvoiceHeader = ({ 
+  invoiceData, 
+  customers, 
+  agencies, 
+  onInvoiceDataChange
+}) => {
   const formatDateForDisplay = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -18,16 +23,6 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
     return customer.CustomerID || customer.customer_id || customer.id;
   };
 
-  // Helper function to get salesperson display name
-  const getSalespersonDisplayName = (salesperson) => {
-    return salesperson.username || salesperson.salespersonname || salesperson.name || 'Unknown Salesperson';
-  };
-
-  // Helper function to get salesperson ID
-  const getSalespersonId = (salesperson) => {
-    return salesperson.UserID || salesperson.salesperson_id || salesperson.id;
-  };
-
   // Helper function to get agency display name
   const getAgencyDisplayName = (agency) => {
     return agency.agencyname || agency.name || 'Unknown Agency';
@@ -37,6 +32,35 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
   const getAgencyId = (agency) => {
     return agency.Agency_ID || agency.id;
   };
+
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    const username = localStorage.getItem("username");
+    const adminId = localStorage.getItem("adminId");
+    const role = localStorage.getItem("role");
+    
+    if (username && adminId) {
+      return {
+        username,
+        id: parseInt(adminId),
+        role
+      };
+    }
+    return null;
+  };
+
+  // Auto-set salesperson when component mounts
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    
+    if (currentUser) {
+      // Set the salesperson data to the current user
+      onInvoiceDataChange('salesperson_id', currentUser.id);
+      onInvoiceDataChange('salesperson_name', currentUser.username);
+    }
+  }, [onInvoiceDataChange]);
+
+  const currentUser = getCurrentUser();
 
   return (
     <div className="mb-8">
@@ -48,7 +72,7 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
             Customer (Pharmacy) *
           </label>
           <select
-            value={invoiceData.customer_id}
+            value={invoiceData.customer_id || ''}
             onChange={(e) => onInvoiceDataChange('customer_id', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
@@ -69,22 +93,13 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Salesperson *
           </label>
-          <select
-            value={invoiceData.salesperson_id}
-            onChange={(e) => onInvoiceDataChange('salesperson_id', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          >
-            <option value="">Select salesperson</option>
-            {salespersons.map(salesperson => (
-              <option key={getSalespersonId(salesperson)} value={getSalespersonId(salesperson)}>
-                {getSalespersonDisplayName(salesperson)}
-              </option>
-            ))}
-          </select>
-          {salespersons.length === 0 && (
-            <p className="text-xs text-red-500 mt-1">No salespersons available</p>
-          )}
+          <input
+            type="text"
+            value={currentUser?.username || ''}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+            readOnly
+            disabled
+          />
         </div>
 
         <div>
@@ -92,7 +107,7 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
             Agency *
           </label>
           <select
-            value={invoiceData.agency_id}
+            value={invoiceData.agency_id || ''}
             onChange={(e) => onInvoiceDataChange('agency_id', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
@@ -115,7 +130,7 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
           </label>
           <input
             type="date"
-            value={invoiceData.date}
+            value={invoiceData.date || ''}
             onChange={(e) => onInvoiceDataChange('date', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
@@ -126,65 +141,8 @@ const InvoiceHeader = ({ invoiceData, customers, salespersons, agencies, onInvoi
         </div>
       </div>
 
-      {/* Customer Details Preview */}
-      {invoiceData.customer_id && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Selected Customer Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            {(() => {
-              const selectedCustomer = customers.find(c => 
-                getCustomerId(c) === parseInt(invoiceData.customer_id)
-              );
-              return selectedCustomer ? (
-                <>
-                  <div>
-                    <span className="font-medium">Owner:</span> {selectedCustomer.owner_name}
-                  </div>
-                  <div>
-                    <span className="font-medium">Phone:</span> {selectedCustomer.phone}
-                  </div>
-                  <div>
-                    <span className="font-medium">Email:</span> {selectedCustomer.email}
-                  </div>
-                  <div>
-                    <span className="font-medium">Credits:</span> ${selectedCustomer.credits || 0}
-                  </div>
-                </>
-              ) : null;
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Agency Details Preview */}
-      {invoiceData.agency_id && (
-        <div className="bg-green-50 border border-green-200 rounded-md p-4">
-          <h3 className="text-sm font-medium text-green-800 mb-2">Selected Agency Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            {(() => {
-              const selectedAgency = agencies.find(a => 
-                getAgencyId(a) === parseInt(invoiceData.agency_id)
-              );
-              return selectedAgency ? (
-                <>
-                  <div>
-                    <span className="font-medium">Contact:</span> {selectedAgency.contact_person}
-                  </div>
-                  <div>
-                    <span className="font-medium">Phone:</span> {selectedAgency.phone}
-                  </div>
-                  <div>
-                    <span className="font-medium">Email:</span> {selectedAgency.email}
-                  </div>
-                  <div>
-                    <span className="font-medium">Sales:</span> ${selectedAgency.sales || 0}
-                  </div>
-                </>
-              ) : null;
-            })()}
-          </div>
-        </div>
-      )}
+     
+      
     </div>
   );
 };
