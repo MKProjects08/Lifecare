@@ -10,6 +10,8 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
+
+
 // ✅ Get product by ID
 exports.getProductById = async (req, res) => {
   try {
@@ -22,18 +24,51 @@ exports.getProductById = async (req, res) => {
   }
 };
 
-// ✅ Create new product
+// ✅ FIXED: Create new product
 exports.createProduct = async (req, res) => {
   try {
-    const { productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID } = req.body;
+    const { 
+      productname, 
+      generic_name, 
+      BatchNumber, // ✅ ADD THIS
+      quantity, 
+      purchase_price, 
+      selling_price, 
+      expiry_date, 
+      Agency_ID,
+      is_active 
+    } = req.body;
+
+    console.log('Received data:', req.body); // Debug log
+
+    // ✅ UPDATED SQL with BatchNumber
     const sql = `
       INSERT INTO products 
-      (productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (productname, generic_name, BatchNumber, quantity, purchase_price, selling_price, expiry_date, Agency_ID, is_active) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const [result] = await db.query(sql, [productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID]);
-    res.status(201).json({ message: "Product created", productId: result.insertId });
+    
+    const values = [
+      productname, 
+      generic_name, 
+      BatchNumber, // ✅ ADD THIS
+      quantity, 
+      purchase_price, 
+      selling_price, 
+      expiry_date, 
+      Agency_ID,
+      is_active || 1 // ✅ ADD THIS
+    ];
+
+    console.log('Executing SQL with values:', values); // Debug log
+
+    const [result] = await db.query(sql, values);
+    res.status(201).json({ 
+      message: "Product created successfully", 
+      productId: result.insertId 
+    });
   } catch (err) {
+    console.error('Error creating product:', err);
     res.status(500).json({ error: err.message });
   }
 };
