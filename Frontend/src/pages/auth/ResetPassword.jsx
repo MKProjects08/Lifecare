@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/react.svg";
+import logo from "../../assets/logo.png";
 import Loading from "../../components/layout/Loading";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const PRIMARY = "#61dafbaa";
+const PRIMARY = "#048dcc";
+
 const TEXT1 = "#1F2937"; // Assuming a dark text color; adjust as needed
 
 const ResetPassword = () => {
@@ -90,10 +91,10 @@ const ResetPassword = () => {
   return (
     <div className="flex items-center justify-center min-h-screen mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center space-y-6 w-full max-w-md">
-        <img src={logo} alt="Logo" className="mx-auto p-2" />
+        <img src={logo} alt="Logo" className="mx-auto p-2 w-50 h-30" />
 
         <div>
-          <h2 style={{ color: TEXT1 }} className="text-3xl leading-9 font-extrabold">
+          <h2 className="text-3xl leading-9 font-extrabold text-[#039e3f]">
             Reset your password
           </h2>
           <p className="text-gray-500 text-[14px] leading-tight mt-2 ">
@@ -159,7 +160,7 @@ const ResetPassword = () => {
             <button
               className={`rounded-md p-4 w-full mt-4 font-medium ${
                 !tempPassword || !newPassword || !confirmPassword
-                  ? "opacity-50 cursor-not-allowed"
+                  ? "opacity-70 cursor-not-allowed"
                   : ""
               }`}
               onClick={handleReset}
