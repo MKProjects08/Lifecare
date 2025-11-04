@@ -52,13 +52,13 @@ app.use('/api/agencies',
 
 app.use('/api/orders', 
   authMiddleware, 
-  roleMiddleware(['admin',  'Worker']), // Admin has full access
+  roleMiddleware(['admin',  'worker']), // Admin has full access
   orderRoutes
 );
 
 app.use('/api/order-items', 
   authMiddleware, 
-  roleMiddleware(['admin', 'Worker']), // Admin has full access
+  roleMiddleware(['admin', 'worker']), // Admin has full access
   orderItemRoutes
 );
 

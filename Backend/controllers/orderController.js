@@ -1,6 +1,6 @@
+// orderController.js - CORRECTED VERSION
 const db = require("../config/db");
 
-// ✅ Get all orders
 // ✅ Get all orders (user-friendly)
 exports.getAllOrders = async (req, res) => {
   try {
@@ -8,6 +8,9 @@ exports.getAllOrders = async (req, res) => {
       SELECT 
         o.Order_ID,
         CONCAT('O', LPAD(o.Order_ID, 5, '0')) AS FormattedOrderID,
+        o.Customer_ID,
+        o.Agency_ID,
+        o.User_ID,
         o.paid_date,
         o.paymentstatus,
         o.print_count,
@@ -19,7 +22,7 @@ exports.getAllOrders = async (req, res) => {
         a.agencyname AS AgencyName,
         u.username AS UserName
       FROM Orders o
-      JOIN Customers c ON o.Customer_ID = c.Customer_ID
+      LEFT JOIN Customers c ON o.Customer_ID = c.Customer_ID
       JOIN Agency a ON o.Agency_ID = a.Agency_ID
       JOIN Users u ON o.User_ID = u.User_ID
       ORDER BY o.Order_ID DESC
@@ -28,71 +31,283 @@ exports.getAllOrders = async (req, res) => {
     // Convert DECIMAL strings to numbers
     const formattedRows = rows.map(r => ({
       ...r,
-      gross_total: parseFloat(r.gross_total),
-      net_total: parseFloat(r.net_total),
-      discount_amount: parseFloat(r.discount_amount)
+      gross_total: parseFloat(r.gross_total) || 0,
+      net_total: parseFloat(r.net_total) || 0,
+      discount_amount: parseFloat(r.discount_amount) || 0
     }));
 
     res.json(formattedRows);
   } catch (err) {
+    console.error('Error in getAllOrders:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Get order by ID
+// ✅ Get order by ID - FIXED: Use Order_ID instead of id
 exports.getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.query("SELECT * FROM Orders WHERE id = ?", [id]);
-    if (rows.length === 0) return res.status(404).json({ message: "Order not found" });
+    const [rows] = await db.query(`
+      SELECT 
+        o.*,
+        CONCAT('O', LPAD(o.Order_ID, 5, '0')) AS FormattedOrderID,
+        c.pharmacyname AS CustomerName,
+        a.agencyname AS AgencyName,
+        u.username AS UserName
+      FROM Orders o
+      LEFT JOIN Customers c ON o.Customer_ID = c.Customer_ID
+      JOIN Agency a ON o.Agency_ID = a.Agency_ID
+      JOIN Users u ON o.User_ID = u.User_ID
+      WHERE o.Order_ID = ?
+    `, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
     res.json(rows[0]);
   } catch (err) {
+    console.error('Error in getOrderById:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Create new order
+// ✅ Create new order (single order) - FIXED
 exports.createOrder = async (req, res) => {
   try {
-    const { Customer_ID, Agency_ID, User_ID, paid_date, paymentstatus, print_count, gross_total, net_total, discount_amount } = req.body;
+    const { 
+      Customer_ID, 
+      Agency_ID, 
+      User_ID, 
+      paid_date, 
+      paymentstatus, 
+      print_count, 
+      gross_total, 
+      net_total, 
+      discount_amount 
+    } = req.body;
+
+    // Validate required fields
+    if (!Agency_ID || !User_ID || gross_total === undefined || net_total === undefined) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: Agency_ID, User_ID, gross_total, net_total are required' 
+      });
+    }
+
     const sql = `
       INSERT INTO Orders 
       (Customer_ID, Agency_ID, User_ID, paid_date, paymentstatus, print_count, gross_total, net_total, discount_amount)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const [result] = await db.query(sql, [Customer_ID, Agency_ID, User_ID, paid_date, paymentstatus, print_count, gross_total, net_total, discount_amount]);
-    res.status(201).json({ message: "Order created", orderId: result.insertId });
+    
+    const [result] = await db.query(sql, [
+      Customer_ID || null,
+      Agency_ID,
+      User_ID,
+      paid_date || null,
+      paymentstatus || 'paid',
+      print_count || 0,
+      parseFloat(gross_total) || 0,
+      parseFloat(net_total) || 0,
+      parseFloat(discount_amount) || 0
+    ]);
+
+    res.status(201).json({ 
+      message: "Order created successfully", 
+      orderId: result.insertId 
+    });
   } catch (err) {
+    console.error('Error in createOrder:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Update order
+// ✅ Create order with items - FIXED AND IMPROVED
+exports.createOrderWithItems = async (req, res) => {
+  console.log("createOrderWithItems called");
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    const {
+      Customer_ID,
+      Agency_ID,
+      User_ID,
+      paid_date,
+      paymentstatus = 'paid',
+      print_count = 0,
+      gross_total,
+      net_total,
+      discount_amount = 0,
+      items // Array of order items
+    } = req.body;
+
+    // Validate required fields
+    if (!Agency_ID || !User_ID) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Missing required fields: Agency_ID and User_ID are required' 
+      });
+    }
+
+    if (gross_total === undefined || net_total === undefined) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Missing required fields: gross_total and net_total are required' 
+      });
+    }
+
+    // Validate items array
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'At least one order item is required' 
+      });
+    }
+
+    // 1. Insert into Orders table
+    const orderSql = `
+      INSERT INTO Orders 
+      (Customer_ID, Agency_ID, User_ID, paid_date, paymentstatus, print_count, gross_total, net_total, discount_amount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const [orderResult] = await connection.query(orderSql, [
+      Customer_ID || null,
+      Agency_ID,
+      User_ID,
+      paid_date || null,
+      paymentstatus,
+      print_count,
+      parseFloat(gross_total) || 0,
+      parseFloat(net_total) || 0,
+      parseFloat(discount_amount) || 0
+    ]);
+console.log("orderSql executed");
+    const orderId = orderResult.insertId;
+
+    // 2. Insert into OrderItem table for each item
+    let itemsCount = 0;
+    const itemSql = `
+      INSERT INTO OrderItem 
+      (Order_ID, Product_ID, BatchNumber, quantity, free_issue_quantity)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    for (const item of items) {
+      // Validate item fields
+      if (!item.productId || !item.batchNumber || item.quantity === undefined) {
+        throw new Error(`Invalid item data: productId, batchNumber, and quantity are required for item ${itemsCount + 1}`);
+      }
+
+      // Validate quantity is positive
+      if (item.quantity <= 0) {
+        throw new Error(`Invalid quantity for item ${itemsCount + 1}: quantity must be greater than 0`);
+      }
+
+      await connection.query(itemSql, [
+        orderId,
+        item.productId,
+        item.batchNumber,
+        parseInt(item.quantity) || 0,
+        parseInt(item.free_issue_quantity) || 0
+      ]);
+      
+      itemsCount++;
+    }
+console.log("All items inserted");
+    // Commit transaction
+    await connection.commit();
+    
+    res.status(201).json({
+      message: "Order created successfully",
+      orderId: orderId,
+      itemsCount: itemsCount,
+      formattedOrderId: `O${String(orderId).padStart(5, '0')}`
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error('Error creating order with items:', err);
+    res.status(500).json({ 
+      error: err.message,
+      details: "Failed to create order and items"
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+// ✅ Update order - FIXED: Use Order_ID instead of id
 exports.updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { Customer_ID, Agency_ID, User_ID, paid_date, paymentstatus, print_count, gross_total, net_total, discount_amount } = req.body;
+    const { 
+      Customer_ID, 
+      Agency_ID, 
+      User_ID, 
+      paid_date, 
+      paymentstatus, 
+      print_count, 
+      gross_total, 
+      net_total, 
+      discount_amount 
+    } = req.body;
+
+    // Validate required fields
+    if (!Agency_ID || !User_ID || gross_total === undefined || net_total === undefined) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: Agency_ID, User_ID, gross_total, net_total are required' 
+      });
+    }
+
     const sql = `
       UPDATE Orders
-      SET Customer_ID=?, Agency_ID=?, User_ID=?, paid_date=?, paymentstatus=?, print_count=?, gross_total=?, net_total=?, discount_amount=?
-      WHERE id=?
+      SET Customer_ID=?, Agency_ID=?, User_ID=?, paid_date=?, paymentstatus=?, 
+          print_count=?, gross_total=?, net_total=?, discount_amount=?
+      WHERE Order_ID=?
     `;
-    const [result] = await db.query(sql, [Customer_ID, Agency_ID, User_ID, paid_date, paymentstatus, print_count, gross_total, net_total, discount_amount, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Order not found" });
+    
+    const [result] = await db.query(sql, [
+      Customer_ID || null,
+      Agency_ID,
+      User_ID,
+      paid_date || null,
+      paymentstatus || 'paid',
+      print_count || 0,
+      parseFloat(gross_total) || 0,
+      parseFloat(net_total) || 0,
+      parseFloat(discount_amount) || 0,
+      id
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
     res.json({ message: "Order updated successfully" });
   } catch (err) {
+    console.error('Error in updateOrder:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Delete order
+// ✅ Delete order - FIXED: Use Order_ID instead of id
 exports.deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.query("DELETE FROM Orders WHERE id = ?", [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Order not found" });
+    
+    // Use DELETE with WHERE Order_ID
+    const [result] = await db.query("DELETE FROM Orders WHERE Order_ID = ?", [id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
     res.json({ message: "Order deleted successfully" });
   } catch (err) {
+    console.error('Error in deleteOrder:', err);
     res.status(500).json({ error: err.message });
   }
 };

@@ -77,7 +77,7 @@ const ProductTable = ({ invoiceItems, onAddProduct, onUpdateItem, onRemoveItem }
                     />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                    ${item.rate.toFixed(2)}
+                    {item.rate.toFixed(2)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <input
@@ -89,10 +89,10 @@ const ProductTable = ({ invoiceItems, onAddProduct, onUpdateItem, onRemoveItem }
                     />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                    ${item.amount.toFixed(2)}
+                    {item.amount.toFixed(2)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${item.total.toFixed(2)}
+                    {item.total.toFixed(2)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                     <button

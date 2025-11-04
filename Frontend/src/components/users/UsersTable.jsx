@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../services/userService';
-import UserModal from '../components/users/UserModal';
+import { userService } from '../../services/userService';
+import UserModal from './UserModal';
 
 const UsersTable = () => {
   const [users, setUsers] = useState([]);
@@ -139,22 +139,6 @@ const UsersTable = () => {
         </div>
       )}
 
-      {/* Add User Button */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-gray-600">
-          Total Users: <span className="font-semibold">{users.length}</span>
-        </div>
-        <button
-          onClick={handleAdd}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center transition-colors duration-200"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Add New User
-        </button>
-      </div>
-
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full table-auto">
           <thead>
@@ -176,16 +160,7 @@ const UsersTable = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <p className="text-lg font-medium">No users found</p>
-                    <p className="text-sm mb-4">Get started by adding your first user</p>
-                    <button
-                      onClick={handleAdd}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center transition-colors duration-200"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Add First User
-                    </button>
+                    <p className="text-sm">Click "Add User" to create your first user</p>
                   </div>
                 </td>
               </tr>
