@@ -1,12 +1,12 @@
 // src/components/billing/InvoiceTotals.jsx
 import React from 'react';
 
-const InvoiceTotals = ({ grossTotal, discount, freeQuantityDiscount, netTotal, onDiscountChange }) => {
+const InvoiceTotals = ({ grossTotal, discount, freeQuantityDiscount, onDiscountChange }) => {
   const totalDiscount = discount + freeQuantityDiscount;
 
   return (
     <div className="border-t border-gray-200 pt-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-lg ml-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md ml-auto">
         <div className="text-right">
           <p className="text-sm font-medium text-gray-700">Gross Total:</p>
           <p className="text-lg font-semibold text-gray-900">{grossTotal.toFixed(2)}</p>
@@ -30,13 +30,8 @@ const InvoiceTotals = ({ grossTotal, discount, freeQuantityDiscount, netTotal, o
               className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
             />
           </div>
-        </div>
-        
-        <div className="text-right">
-          <p className="text-sm font-medium text-gray-700">Total Discount:</p>
+          <p className="text-sm font-medium text-gray-700 mt-2">Total Discount:</p>
           <p className="text-sm text-red-600">{totalDiscount.toFixed(2)}</p>
-          <p className="text-sm font-medium text-gray-700 mt-2">Net Total:</p>
-          <p className="text-xl font-bold text-blue-600">{netTotal.toFixed(2)}</p>
         </div>
       </div>
     </div>

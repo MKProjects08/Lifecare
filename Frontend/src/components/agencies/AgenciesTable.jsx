@@ -1,98 +1,94 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../services/userService';
-import UserModal from '../components/users/UserModal';
+import { agencyService } from '../../services/agencyService';
+import AgencyModal from './AgencyModal';
 
-const UsersTable = () => {
-  const [users, setUsers] = useState([]);
+const AgenciesTable = () => {
+  const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedAgency, setSelectedAgency] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('view');
 
   useEffect(() => {
-    loadUsers();
+    loadAgencies();
   }, []);
 
-  const loadUsers = async () => {
+  const loadAgencies = async () => {
     try {
       setLoading(true);
       setError('');
-      const usersData = await userService.getAllUsers();
-      setUsers(usersData);
+      const agenciesData = await agencyService.getAllAgencies();
+      setAgencies(agenciesData);
     } catch (err) {
-      setError('Failed to load users: ' + err.message);
-      console.error('Error loading users:', err);
+      setError('Failed to load agencies: ' + err.message);
+      console.error('Error loading agencies:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleView = (user) => {
-    setSelectedUser(user);
+  const handleView = (agency) => {
+    setSelectedAgency(agency);
     setModalMode('view');
     setIsModalOpen(true);
   };
 
-  const handleEdit = (user) => {
-    setSelectedUser(user);
+  const handleEdit = (agency) => {
+    setSelectedAgency(agency);
     setModalMode('edit');
     setIsModalOpen(true);
   };
 
   const handleAdd = () => {
-    setSelectedUser(null);
+    setSelectedAgency(null);
     setModalMode('add');
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (user) => {
-    if (window.confirm(`Are you sure you want to delete user "${user.username}"? This action cannot be undone.`)) {
+  const handleDelete = async (agency) => {
+    if (window.confirm(`Are you sure you want to delete agency "${agency.agencyname}"? This action cannot be undone.`)) {
       try {
-        await userService.deleteUser(user.User_ID || user.UserID || user.id);
-        await loadUsers();
-        alert('User deleted successfully!');
+        await agencyService.deleteAgency(agency.Agency_ID || agency.id);
+        await loadAgencies();
+        alert('Agency deleted successfully!');
       } catch (err) {
-        setError('Failed to delete user: ' + err.message);
-        console.error('Error deleting user:', err);
+        setError('Failed to delete agency: ' + err.message);
+        console.error('Error deleting agency:', err);
       }
     }
   };
 
-  const handleSave = async (userData) => {
+  const handleSave = async (agencyData) => {
     try {
       if (modalMode === 'add') {
-        await userService.createUser(userData);
-        alert('User added successfully!');
+        await agencyService.createAgency(agencyData);
+        alert('Agency added successfully!');
       } else if (modalMode === 'edit') {
-        const userId = selectedUser.User_ID || selectedUser.UserID || selectedUser.id;
-        await userService.updateUser(userId, userData);
-        alert('User updated successfully!');
+        const agencyId = selectedAgency.Agency_ID || selectedAgency.id;
+        await agencyService.updateAgency(agencyId, agencyData);
+        alert('Agency updated successfully!');
       }
       
-      await loadUsers();
+      await loadAgencies();
       setIsModalOpen(false);
-      setSelectedUser(null);
+      setSelectedAgency(null);
     } catch (err) {
-      setError(`Failed to ${modalMode === 'add' ? 'add' : 'update'} user: ` + err.message);
-      console.error(`Error ${modalMode === 'add' ? 'adding' : 'updating'} user:`, err);
-      throw err; // Re-throw to let modal handle it
+      setError(`Failed to ${modalMode === 'add' ? 'add' : 'update'} agency: ` + err.message);
+      console.error(`Error ${modalMode === 'add' ? 'adding' : 'updating'} agency:`, err);
+      throw err;
     }
   };
 
   const handleRetry = () => {
-    loadUsers();
+    loadAgencies();
   };
 
-  const getRoleBadgeClass = (role) => {
-    switch (role?.toLowerCase()) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'worker':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
   };
 
   const getStatusBadgeClass = (isActive) => {
@@ -139,10 +135,10 @@ const UsersTable = () => {
         </div>
       )}
 
-      {/* Add User Button */}
+      {/* Add Agency Button */}
       <div className="flex justify-between items-center mb-4">
         <div className="text-sm text-gray-600">
-          Total Users: <span className="font-semibold">{users.length}</span>
+          Total Agencies: <span className="font-semibold">{agencies.length}</span>
         </div>
         <button
           onClick={handleAdd}
@@ -151,7 +147,7 @@ const UsersTable = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-          Add New User
+          Add New Agency
         </button>
       </div>
 
@@ -159,24 +155,26 @@ const UsersTable = () => {
         <table className="min-w-full table-auto">
           <thead>
             <tr className="bg-gray-100">
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Username</th>
+              <th className="py-3 px-4 text-left font-semibold text-gray-700">Agency Name</th>
+              <th className="py-3 px-4 text-left font-semibold text-gray-700">Contact Person</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Email</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Phone</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Role</th>
+              <th className="py-3 px-4 text-left font-semibold text-gray-700">Sales</th>
+              <th className="py-3 px-4 text-left font-semibold text-gray-700">Target</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.length === 0 ? (
+            {agencies.length === 0 ? (
               <tr>
-                <td colSpan="6" className="py-8 px-4 text-center text-gray-500">
+                <td colSpan="8" className="py-8 px-4 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <p className="text-lg font-medium">No users found</p>
-                    <p className="text-sm mb-4">Get started by adding your first user</p>
+                    <p className="text-lg font-medium">No agencies found</p>
+                    <p className="text-sm mb-4">Get started by adding your first agency</p>
                     <button
                       onClick={handleAdd}
                       className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center transition-colors duration-200"
@@ -184,44 +182,48 @@ const UsersTable = () => {
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
-                      Add First User
+                      Add First Agency
                     </button>
                   </div>
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
-                <tr key={user.User_ID || user.UserID || user.id} className="border-b hover:bg-gray-50">
+              agencies.map((agency) => (
+                <tr key={agency.Agency_ID || agency.id} className="border-b hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div>
-                      <p className="font-medium text-gray-900">{user.username}</p>
+                      <p className="font-medium text-gray-900">{agency.agencyname}</p>
                       <p className="text-xs text-gray-500">
-                        ID: {user.User_ID || user.UserID || user.id}
+                        ID: {agency.Agency_ID || agency.id}
                       </p>
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <p className="text-gray-900">{user.email}</p>
+                    <p className="text-gray-900">{agency.contact_person}</p>
                   </td>
                   <td className="py-3 px-4">
-                    <p className="text-gray-900">{user.phone}</p>
+                    <p className="text-gray-900">{agency.email}</p>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)}`}>
-                      {user.role || 'N/A'}
-                    </span>
+                    <p className="text-gray-900">{agency.phone}</p>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(user.is_active)}`}>
-                      {user.is_active !== false ? 'Active' : 'Inactive'}
+                    <p className="font-semibold text-green-600">{formatCurrency(agency.sales || 0)}</p>
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="font-semibold text-blue-600">{formatCurrency(agency.target || 0)}</p>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(agency.is_active)}`}>
+                      {agency.is_active !== false ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleView(user)}
+                        onClick={() => handleView(agency)}
                         className="flex items-center bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-                        title="View User"
+                        title="View Agency"
                       >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -230,9 +232,9 @@ const UsersTable = () => {
                         View
                       </button>
                       <button
-                        onClick={() => handleEdit(user)}
+                        onClick={() => handleEdit(agency)}
                         className="flex items-center bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
-                        title="Edit User"
+                        title="Edit Agency"
                       >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -240,9 +242,9 @@ const UsersTable = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(user)}
+                        onClick={() => handleDelete(agency)}
                         className="flex items-center bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
-                        title="Delete User"
+                        title="Delete Agency"
                       >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -258,14 +260,14 @@ const UsersTable = () => {
         </table>
       </div>
 
-      {/* User Modal */}
+      {/* Agency Modal */}
       {isModalOpen && (
-        <UserModal
-          user={selectedUser}
+        <AgencyModal
+          agency={selectedAgency}
           mode={modalMode}
           onClose={() => {
             setIsModalOpen(false);
-            setSelectedUser(null);
+            setSelectedAgency(null);
           }}
           onSave={handleSave}
         />
@@ -274,4 +276,4 @@ const UsersTable = () => {
   );
 };
 
-export default UsersTable;
+export default AgenciesTable;

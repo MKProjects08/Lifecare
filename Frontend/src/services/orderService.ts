@@ -1,12 +1,12 @@
-// src/services/orderService.ts
+// src/services/orderService.ts - FIXED VERSION
 import { getAuthToken, API_BASE_URL, getHeaders, handleResponse } from './productService';
 
-// Order interface matching your database schema
+// Order interfaces
 export interface Order {
   Order_ID?: number;
   id?: number;
   FormattedOrderID?: string;
-  Customer_ID: number;
+  Customer_ID: number | null;
   Agency_ID: number;
   User_ID: number;
   paid_date: string | null;
@@ -28,8 +28,35 @@ export interface OrderWithDetails extends Order {
   UserName: string;
 }
 
+export interface OrderItem {
+  productId: number;
+  batchNumber: string;
+  quantity: number;
+  free_issue_quantity: number;
+}
+
+export interface CreateOrderRequest {
+  Customer_ID: number | null;
+  Agency_ID: number;
+  User_ID: number;
+  paid_date: string | null;
+  paymentstatus: string;
+  print_count: number;
+  gross_total: number;
+  net_total: number;
+  discount_amount: number;
+  items: OrderItem[];
+}
+
+export interface CreateOrderResponse {
+  message: string;
+  orderId: number;
+  itemsCount: number;
+  formattedOrderId?: string;
+}
+
 export const orderService = {
-  // ✅ Get all orders (user-friendly with details)
+  // ✅ Get all orders
   getAllOrders: async (): Promise<OrderWithDetails[]> => {
     try {
       const token = getAuthToken();
@@ -78,9 +105,9 @@ export const orderService = {
     }
   },
 
-  // ✅ Create new order
+  // ✅ Create new order (single order without items)
   createOrder: async (orderData: {
-    Customer_ID: number;
+    Customer_ID: number | null;
     Agency_ID: number;
     User_ID: number;
     paid_date: string | null;
@@ -110,9 +137,60 @@ export const orderService = {
     }
   },
 
+  // ✅ Create new order with items (FIXED)
+  createOrderWithItems: async (orderData: CreateOrderRequest): Promise<CreateOrderResponse> => {
+    try {
+      const token = getAuthToken();
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+      }
+
+      // Validate data before sending
+      if (!orderData.Agency_ID || !orderData.User_ID) {
+        throw new Error('Agency and User are required');
+      }
+
+      if (!orderData.items || orderData.items.length === 0) {
+        throw new Error('At least one item is required');
+      }
+
+      // Log the request for debugging
+      console.log('Creating order with items:', {
+        url: `${API_BASE_URL}/orders/create-with-items`,
+        orderData: orderData
+      });
+
+      const response = await fetch(`${API_BASE_URL}/orders/create-with-items`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(orderData)
+      });
+
+      // Check response status
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        
+        // Try to parse as JSON, fallback to text
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.error || errorJson.message || `HTTP ${response.status}`);
+        } catch (e) {
+          throw new Error(`API Error: ${response.status} - ${errorText}`);
+        }
+      }
+
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Error in orderService.createOrderWithItems:', error);
+      throw error;
+    }
+  },
+
   // ✅ Update order
   updateOrder: async (id: string | number, orderData: {
-    Customer_ID: number;
+    Customer_ID: number | null;
     Agency_ID: number;
     User_ID: number;
     paid_date: string | null;
@@ -163,7 +241,7 @@ export const orderService = {
     }
   },
 
-  // Utility method to get orders by customer
+  // Utility methods
   getOrdersByCustomer: async (customerId: string | number): Promise<OrderWithDetails[]> => {
     try {
       const allOrders = await orderService.getAllOrders();
@@ -174,7 +252,6 @@ export const orderService = {
     }
   },
 
-  // Utility method to get orders by agency
   getOrdersByAgency: async (agencyId: string | number): Promise<OrderWithDetails[]> => {
     try {
       const allOrders = await orderService.getAllOrders();
@@ -185,7 +262,6 @@ export const orderService = {
     }
   },
 
-  // Utility method to get orders by payment status
   getOrdersByPaymentStatus: async (paymentStatus: string): Promise<OrderWithDetails[]> => {
     try {
       const allOrders = await orderService.getAllOrders();
@@ -198,7 +274,6 @@ export const orderService = {
     }
   },
 
-  // Utility method to get orders by date range
   getOrdersByDateRange: async (startDate: string, endDate: string): Promise<OrderWithDetails[]> => {
     try {
       const allOrders = await orderService.getAllOrders();
@@ -218,7 +293,6 @@ export const orderService = {
     }
   },
 
-  // Utility method to update order payment status
   updateOrderPaymentStatus: async (id: string | number, paymentStatus: string): Promise<{ message: string }> => {
     try {
       const order = await orderService.getOrderById(id);
@@ -240,7 +314,6 @@ export const orderService = {
     }
   },
 
-  // Utility method to increment print count
   incrementPrintCount: async (id: string | number): Promise<{ message: string }> => {
     try {
       const order = await orderService.getOrderById(id);
@@ -262,7 +335,6 @@ export const orderService = {
     }
   },
 
-  // Utility method to get recent orders
   getRecentOrders: async (limit: number = 10): Promise<OrderWithDetails[]> => {
     try {
       const allOrders = await orderService.getAllOrders();
@@ -275,6 +347,3 @@ export const orderService = {
     }
   }
 };
-
-// Export the Order types for use in components
-//export type { Order, OrderWithDetails };

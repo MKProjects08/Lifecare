@@ -1,10 +1,9 @@
-// src/services/customerService.ts
 import { getAuthToken, API_BASE_URL, getHeaders, handleResponse } from './productService';
 
-// Customer interface matching your database schema
 export interface Customer {
   CustomerID?: number;
   Customer_ID?: number;
+  id?: number;
   pharmacyname: string;
   owner_name: string;
   phone: string;
@@ -12,6 +11,24 @@ export interface Customer {
   email: string;
   credits: number;
   is_active?: boolean;
+}
+
+export interface CreateCustomerData {
+  pharmacyname: string;
+  owner_name: string;
+  phone: string;
+  address: string;
+  email: string;
+  credits: number;
+}
+
+export interface UpdateCustomerData {
+  pharmacyname: string;
+  owner_name: string;
+  phone: string;
+  address: string;
+  email: string;
+  credits: number;
 }
 
 export const customerService = {
@@ -65,14 +82,7 @@ export const customerService = {
   },
 
   // ✅ Create new customer
-  createCustomer: async (customerData: {
-    pharmacyname: string;
-    owner_name: string;
-    phone: string;
-    address: string;
-    email: string;
-    credits: number;
-  }): Promise<{ message: string; customerId: number }> => {
+  createCustomer: async (customerData: CreateCustomerData): Promise<{ message: string; customerId: number }> => {
     try {
       const token = getAuthToken();
       
@@ -94,14 +104,7 @@ export const customerService = {
   },
 
   // ✅ Update customer
-  updateCustomer: async (id: string | number, customerData: {
-    pharmacyname: string;
-    owner_name: string;
-    phone: string;
-    address: string;
-    email: string;
-    credits: number;
-  }): Promise<{ message: string }> => {
+  updateCustomer: async (id: string | number, customerData: UpdateCustomerData): Promise<{ message: string }> => {
     try {
       const token = getAuthToken();
       
@@ -122,7 +125,7 @@ export const customerService = {
     }
   },
 
-  // ✅ Soft delete customer
+  // ✅ Delete customer (soft delete)
   deleteCustomer: async (id: string | number): Promise<{ message: string }> => {
     try {
       const token = getAuthToken();
@@ -154,7 +157,7 @@ export const customerService = {
     }
   },
 
-  // Utility method to search customers by name, owner, or email
+  // Utility method to search customers by pharmacy name, owner name, or email
   searchCustomers: async (searchTerm: string): Promise<Customer[]> => {
     try {
       const allCustomers = await customerService.getAllCustomers();
@@ -170,38 +173,14 @@ export const customerService = {
     }
   },
 
-  // Utility method to get customers by credit range
-  getCustomersByCreditRange: async (minCredit: number, maxCredit: number): Promise<Customer[]> => {
+  // Utility method to get customers with credits
+  getCustomersWithCredits: async (): Promise<Customer[]> => {
     try {
       const allCustomers = await customerService.getAllCustomers();
-      return allCustomers.filter(customer => 
-        customer.credits >= minCredit && customer.credits <= maxCredit
-      );
+      return allCustomers.filter(customer => (customer.credits || 0) > 0);
     } catch (error) {
-      console.error('Error in customerService.getCustomersByCreditRange:', error);
-      throw error;
-    }
-  },
-
-  // Utility method to update customer credits
-  updateCustomerCredits: async (id: string | number, newCredits: number): Promise<{ message: string }> => {
-    try {
-      const customer = await customerService.getCustomerById(id);
-      
-      return await customerService.updateCustomer(id, {
-        pharmacyname: customer.pharmacyname,
-        owner_name: customer.owner_name,
-        phone: customer.phone,
-        address: customer.address,
-        email: customer.email,
-        credits: newCredits
-      });
-    } catch (error) {
-      console.error('Error in customerService.updateCustomerCredits:', error);
+      console.error('Error in customerService.getCustomersWithCredits:', error);
       throw error;
     }
   }
 };
-
-// Export the Customer type for use in components
-//export type { Customer };
