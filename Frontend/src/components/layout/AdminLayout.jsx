@@ -73,7 +73,7 @@ const AdminLayout = () => {
   return (
     <div className="flex w-full h-screen overflow-hidden bg-white no-scrollbar">
       {/* Desktop sidebar - always visible, full height */}
-      <div className="relative overflow-visible hidden md:block flex-shrink-0 w-52">
+      <div className="relative overflow-visible hidden md:block flex-shrink-0 w-58">
         <SideNavBar userRole={user.role} />
       </div>
       {/* Main content area - full remaining width */}
@@ -83,11 +83,11 @@ const AdminLayout = () => {
           {/* Left section with logo */}
           <div className="flex items-center py-4.5">
             <span className="flex items-center">
-              <img
+              {/* <img
                 src={menu}
                 alt="Bereload Logo"
                 className="w-8 h-8 ml-1"
-              />
+              /> */}
               {/* <img
                 src={logoName}
                 alt="Bereload Name"

@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import logo from "../assets/react.svg";
+import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Loading from "../components/layout/Loading";
 import axios from 'axios';
 
-const PRIMARY = "#61dafbaa";
-const TEXT1 = "#1F2937";
+const PRIMARY = "#048dcc";
+const TEXT1 = "1#F2937";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -106,9 +106,9 @@ const SignIn = () => {
   return (
     <div className="flex items-center justify-center min-h-screen mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center space-y-6 w-full max-w-md">
-        <img src={logo} alt="App Logo" className="mx-auto p-2" />
-        <div>
-          <h2 className="text-[TEXT1] text-3xl leading-9 font-extrabold">
+        <img src={logo} alt="App Logo" className="mx-auto p-2 h-30 w-50 -0  " />
+        <div>mb
+          <h2 className="text-[#039e3f] text-3xl leading-9 font-extrabold">
             Sign in to your account
           </h2>
         </div>
@@ -164,7 +164,7 @@ const SignIn = () => {
             <button
               className={`rounded-md p-4 w-full mt-6 font-medium ${
                 !emailAddress || !password
-                  ? "opacity-50 cursor-not-allowed"
+                  ? "opacity-70 cursor-not-allowed"
                   : ""
               }`}
               onClick={handleSignIn}

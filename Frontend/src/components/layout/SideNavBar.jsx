@@ -13,7 +13,7 @@ import {
   Users,
   Settings,
 } from "lucide-react";
-import logo from "../../assets/react.svg";
+import logo from "../../assets/logo.png";
 import logoName from "../../assets/react.svg";
 
 const adminPaths = [
@@ -77,19 +77,21 @@ const SideNavBar = ({ userRole = "worker" }) => {
   return (
     <div
       className="
-        w-52
-        bg-white md:bg-[#E5E7EB]
-        top-0 h-screen transition-all duration-300 overflow-y-auto z-10
+        w-58
+       md:bg-[#E1F2F5]
+        top-0 h-screen transition-all duration-300 overflow-y-auto z-10 
       "
     >
       <div>
         {/* Logo Section - always render on md and up */}
         <div className="hidden md:block px-4 py-4 border-gray-200 h-full">
           <div className="flex items-center gap-0 mb-2 mt-2 ml-3">
-            <img src={logo} alt="Logo" className="transition-all w-10 h-10 ml-1" />
-            <img src={logoName} alt="Name" className="w-23 h-8" />
+            <img src={logo} alt="Logo" className="transition-all w-30 h-15 ml-1" />
           </div>
+          
+        <hr className="border-gray-500" />
         </div>
+
 
         {/* Navigation Links */}
         <nav className="px-4 space-y-3">
@@ -99,21 +101,20 @@ const SideNavBar = ({ userRole = "worker" }) => {
             return (
               <div key={item.path} className="relative">
                 <Link
-                  id={href}
-                  to={href}
-                  className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    active
-                      ? "bg-[#111827] text-[#05E27E] shadow-lg"
-                      : "text-gray-900 hover:bg-gray-200"
-                  }`}
-                >
-                  <item.icon
-                    className={`w-6 h-6 transition-all ${
-                      active ? "text-[#05E27E]" : "text-gray-900"
-                    }`}
-                  />
-                  <span className="ml-3 text-base font-medium">{item.label}</span>
-                </Link>
+  id={href}
+  to={href}
+  className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+    active ? "bg-[#111827] text-[#3F75B0] shadow-lg" : "text-[#3F75B0] hover:bg-gray-200"
+  }`}
+>
+  <item.icon
+    className={`w-6 h-6 transition-all ${
+      active ? "text-[#05E27E] text-[15px]" : "text-[#059e40] text-[15px]"
+    }`}
+  />
+  <span className="ml-3 text-base font-medium">{item.label}</span>
+</Link>
+
               </div>
             );
           })}
