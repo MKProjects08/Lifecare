@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { orderService } from '../../services/orderService';
+import OrderDetailsPopup from '../orders/OrderDetailsPopup';
 
 const SalesTable = ({ filters }) => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [loadingOrderId, setLoadingOrderId] = useState(null);
+  const [showPaidDateModal, setShowPaidDateModal] = useState(false);
+  const [modalOrderId, setModalOrderId] = useState(null);
+  const [modalNextStatus, setModalNextStatus] = useState('paid');
+  const [modalPaidDate, setModalPaidDate] = useState(() => {
+    const t = new Date();
+    const y = t.getFullYear();
+    const m = String(t.getMonth() + 1).padStart(2, '0');
+    const d = String(t.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
 
   useEffect(() => {
     loadSales();
@@ -26,6 +40,11 @@ const SalesTable = ({ filters }) => {
 
   // Apply filters to sales data
   const filteredSales = sales.filter(sale => {
+    // Show only orders that have been printed at least once
+    if ((sale.print_count || 0) <= 0) {
+      return false;
+    }
+
     // Customer filter
     if (filters.customer && sale.Customer_ID != filters.customer) {
       return false;
@@ -62,26 +81,22 @@ const SalesTable = ({ filters }) => {
     return true;
   });
 
-  // Calculate totals
+  // Calculate totals (exclude net total per requirements)
   const totals = filteredSales.reduce((acc, sale) => {
     const grossTotal = parseFloat(sale.gross_total) || 0;
-    const netTotal = parseFloat(sale.net_total) || 0;
     const discount = parseFloat(sale.discount_amount) || 0;
 
     return {
       grossTotal: acc.grossTotal + grossTotal,
-      netTotal: acc.netTotal + netTotal,
       discount: acc.discount + discount,
       count: acc.count + 1
     };
-  }, { grossTotal: 0, netTotal: 0, discount: 0, count: 0 });
+  }, { grossTotal: 0, discount: 0, count: 0 });
 
-  // Format currency
+  // Format currency (plain numeric string)
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    const n = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return isNaN(n) ? '0.00' : n.toFixed(2);
   };
 
   // Format date
@@ -147,10 +162,7 @@ const SalesTable = ({ filters }) => {
               <p className="text-sm text-gray-600">Total Discount</p>
               <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.discount)}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-600">
-              <p className="text-sm text-gray-600">Net Total</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.netTotal)}</p>
-            </div>
+            {/* Removed Net Total card as per requirements */}
           </div>
         </div>
       )}
@@ -165,7 +177,7 @@ const SalesTable = ({ filters }) => {
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Order Date</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Payment Status</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Gross Total</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Net Total</th>
+              <th className="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -199,8 +211,66 @@ const SalesTable = ({ filters }) => {
                   <td className="py-3 px-4 font-semibold">
                     {formatCurrency(parseFloat(sale.gross_total) || 0)}
                   </td>
-                  <td className="py-3 px-4 font-semibold">
-                    {formatCurrency(parseFloat(sale.net_total) || 0)}
+                  <td className="py-3 px-4">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            setLoadingOrderId(sale.Order_ID || sale.id);
+                            const details = await orderService.getOrderById(sale.Order_ID || sale.id);
+                            setSelectedOrder(details);
+                            setShowPopup(true);
+                          } catch (e) {
+                            setError('Failed to load order details: ' + e.message);
+                          } finally {
+                            setLoadingOrderId(null);
+                          }
+                        }}
+                        disabled={loadingOrderId === (sale.Order_ID || sale.id)}
+                        className="flex items-center px-3 py-1 text-sm disabled:opacity-50"
+                        title="View Order"
+                      >
+                        <svg className="w-5 h-5 mr-1" fill="none" stroke="#3F75B0" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const current = sale.paymentstatus || 'pending';
+                            const next = current === 'paid' ? 'pending' : 'paid';
+
+                            if (next === 'paid') {
+                              setModalOrderId(sale.Order_ID || sale.id);
+                              setModalNextStatus(next);
+                              const t = new Date();
+                              const y = t.getFullYear();
+                              const m = String(t.getMonth() + 1).padStart(2, '0');
+                              const d = String(t.getDate()).padStart(2, '0');
+                              setModalPaidDate(`${y}-${m}-${d}`);
+                              setShowPaidDateModal(true);
+                              return;
+                            }
+
+                            await orderService.updateOrderPaymentStatus(
+                              sale.Order_ID || sale.id,
+                              next,
+                              null
+                            );
+                            await loadSales();
+                          } catch (e) {
+                            setError('Failed to change payment status: ' + e.message);
+                          }
+                        }}
+                        className="flex items-center px-3 py-1 text-sm text-blue-700"
+                        title="Change Payment Status"
+                      >
+                        <svg className="w-5 h-5 mr-1" fill="none" stroke="#2563eb" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 8v8m-6 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -208,8 +278,6 @@ const SalesTable = ({ filters }) => {
           </tbody>
         </table>
       </div>
-
-      
 
       {/* Results Count */}
       <div className="mt-4 flex justify-between items-center">
@@ -222,6 +290,70 @@ const SalesTable = ({ filters }) => {
           </div>
         )}
       </div>
+
+      {/* Order Details Popup */}
+      {showPopup && (
+        <OrderDetailsPopup
+          order={selectedOrder}
+          onClose={() => {
+            setShowPopup(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {showPaidDateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Set Paid Date</h3>
+            <div className="space-y-2">
+              <label className="block text-sm text-gray-600">Paid Date</label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2"
+                value={modalPaidDate}
+                onChange={(e) => setModalPaidDate(e.target.value)}
+              />
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setShowPaidDateModal(false);
+                  setModalOrderId(null);
+                }}
+                className="px-4 py-2 text-sm rounded border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    if (!modalOrderId) return;
+                    const ymdRegex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (!modalPaidDate || !ymdRegex.test(modalPaidDate)) {
+                      setError('Invalid date. Please select a valid date.');
+                      return;
+                    }
+                    await orderService.updateOrderPaymentStatus(
+                      modalOrderId,
+                      modalNextStatus,
+                      modalPaidDate
+                    );
+                    setShowPaidDateModal(false);
+                    setModalOrderId(null);
+                    await loadSales();
+                  } catch (e) {
+                    setError('Failed to change payment status: ' + e.message);
+                  }
+                }}
+                className="px-4 py-2 text-sm rounded bg-blue-600 text-white"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

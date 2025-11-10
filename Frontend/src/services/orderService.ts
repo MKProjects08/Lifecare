@@ -293,15 +293,48 @@ export const orderService = {
     }
   },
 
-  updateOrderPaymentStatus: async (id: string | number, paymentStatus: string): Promise<{ message: string }> => {
+  updateOrderPaymentStatus: async (
+    id: string | number,
+    paymentStatus: string,
+    paidDate?: string | null
+  ): Promise<{ message: string }> => {
     try {
       const order = await orderService.getOrderById(id);
-      
+
+      // Helper to format to YYYY-MM-DD (MySQL DATE)
+      const toYMD = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      let nextPaidDate: string | null = null;
+      if (paymentStatus === 'paid') {
+        if (paidDate && paidDate.trim()) {
+          // If a date is provided (assumed as YYYY-MM-DD), keep it as-is
+          // but also allow ISO strings by converting them
+          const parsed = new Date(paidDate);
+          if (!isNaN(parsed.getTime())) {
+            nextPaidDate = toYMD(parsed);
+          } else {
+            // Fallback: use the provided string (assumed valid YYYY-MM-DD)
+            nextPaidDate = paidDate as string;
+          }
+        } else {
+          // Default to today when none provided
+          nextPaidDate = toYMD(new Date());
+        }
+      } else {
+        // pending or other statuses clear the paid_date
+        nextPaidDate = null;
+      }
+
       return await orderService.updateOrder(id, {
         Customer_ID: order.Customer_ID,
         Agency_ID: order.Agency_ID,
         User_ID: order.User_ID,
-        paid_date: order.paid_date,
+        paid_date: nextPaidDate,
         paymentstatus: paymentStatus,
         print_count: order.print_count,
         gross_total: order.gross_total,
@@ -318,11 +351,24 @@ export const orderService = {
     try {
       const order = await orderService.getOrderById(id);
       
+      // Format paid_date to YYYY-MM-DD if present to satisfy MySQL DATE type
+      const toYMD = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      let paidDate: string | null = null;
+      if (order.paid_date) {
+        const parsed = new Date(order.paid_date as any);
+        paidDate = isNaN(parsed.getTime()) ? null : toYMD(parsed);
+      }
+
       return await orderService.updateOrder(id, {
         Customer_ID: order.Customer_ID,
         Agency_ID: order.Agency_ID,
         User_ID: order.User_ID,
-        paid_date: order.paid_date,
+        paid_date: paidDate,
         paymentstatus: order.paymentstatus,
         print_count: (order.print_count || 0) + 1,
         gross_total: order.gross_total,
