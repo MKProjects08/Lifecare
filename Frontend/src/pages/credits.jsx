@@ -127,12 +127,11 @@ const Credit = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Customer Credit</h1>
-          <p className="text-gray-600 mt-1">Pending payments from customers</p>
+          <h2 className="text-3xl font-bold text-[#3F75B0]">Customer Credit</h2>
         </div>
         <button
           onClick={refreshData}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center transition-colors duration-200"
+          className="bg-[#048dcc] text-white px-4 py-2 rounded-lg hover:bg-[#3F75B0] flex items-center transition-colors duration-200"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -193,7 +192,7 @@ const Credit = () => {
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-[#E1F2F5]">
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Pharmacy Name</th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Customer ID</th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Pending Orders</th>
@@ -216,7 +215,7 @@ const Credit = () => {
                 </tr>
               ) : (
                 customerBalances.map((customer) => (
-                  <tr key={customer.customerId} className="border-b hover:bg-gray-50">
+                  <tr key={customer.customerId} className="border-b border-[#E1F2F5]  hover:bg-gray-50 text-left">
                     <td className="py-3 px-4">
                       <p className="font-medium text-gray-900">{customer.pharmacyName}</p>
                     </td>
@@ -247,12 +246,12 @@ const Credit = () => {
 
         {/* Summary Footer */}
         {customerBalances.length > 0 && (
-          <div className="border-t bg-gray-50 px-4 py-3">
+          <div className="border-t border-[#E1F2F5] bg-gray-50 px-4 py-3">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
                 Showing {customerBalances.length} customers with pending payments
               </div>
-              <div className="text-sm font-semibold text-gray-800">
+              <div className="text-sm font-semibold text-gray-800 bg-[#b8dae3] px-2.5 py-0.5 rounded-full">
                 Total Outstanding: <span className="text-red-600">{formatCurrency(totalPendingBalance)}</span>
               </div>
             </div>
@@ -262,13 +261,13 @@ const Credit = () => {
 
       {/* Additional Info */}
       {customerBalances.length > 0 && (
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
           <div className="flex items-start">
-            <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-orange-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-orange-800">
                 <strong>Note:</strong> This page shows the total pending amount for each customer where payment status is "pending". 
                 The amounts are calculated based on the net total of unpaid orders and displayed with actual pharmacy names.
               </p>

@@ -112,8 +112,8 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white rounded-lg  w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="px-6 py-4 border-b bg-[#E1F2F5] border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">{getTitle()}</h2>
           <button
             onClick={onClose}
@@ -124,11 +124,11 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6 text-left">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Pharmacy Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Pharmacy Name *
               </label>
               <input
@@ -137,7 +137,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
                 value={formData.pharmacyname}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
                   errors.pharmacyname ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter pharmacy name"
@@ -149,7 +149,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
 
             {/* Owner Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Owner Name *
               </label>
               <input
@@ -158,7 +158,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
                 value={formData.owner_name}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
                   errors.owner_name ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter owner name"
@@ -172,7 +172,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Email *
               </label>
               <input
@@ -181,7 +181,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
                 value={formData.email}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter email address"
@@ -193,7 +193,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Phone *
               </label>
               <input
@@ -202,7 +202,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
                 value={formData.phone}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
                   errors.phone ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter phone number"
@@ -215,7 +215,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
 
           {/* Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[#3F75B0] mb-1">
               Address *
             </label>
             <textarea
@@ -224,7 +224,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
               onChange={handleChange}
               disabled={mode === 'view'}
               rows={3}
-              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
                 errors.address ? 'border-red-500' : 'border-gray-300'
               } ${mode === 'view' ? 'bg-gray-100' : ''}`}
               placeholder="Enter full address"
@@ -236,7 +236,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
 
           {/* Credits */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[#3F75B0] mb-1">
               Credits ($)
             </label>
             <input
@@ -247,7 +247,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
               disabled={mode === 'view'}
               min="0"
               step="0.01"
-              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
                 errors.credits ? 'border-red-500' : 'border-gray-300'
               } ${mode === 'view' ? 'bg-gray-100' : ''}`}
               placeholder="Enter credit amount"
@@ -271,7 +271,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                className="px-4 py-2  bg-[#29996B] text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
               >
                 {loading && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -286,7 +286,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Close
               </button>

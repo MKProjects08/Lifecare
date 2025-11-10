@@ -70,8 +70,8 @@ const OrdersTable = () => {
   const getPrintButtonClass = (order) => {
     const printCount = order.print_count || 0;
     return printCount === 0 
-      ? 'bg-green-600 hover:bg-green-700'
-      : 'bg-blue-600 hover:bg-blue-700';
+      ? ' text-[#29996B]'
+      : 'text-orange-300 ';
   };
 
   // Helper function to safely format currency in table
@@ -122,7 +122,7 @@ const OrdersTable = () => {
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full table-auto">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[#E1F2F5]">
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Order ID</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Customer Name</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Agency Name</th>
@@ -140,7 +140,7 @@ const OrdersTable = () => {
               </tr>
             ) : (
               orders.map((order) => (
-                <tr key={order.Order_ID || order.id} className="border-b hover:bg-gray-50">
+                <tr key={order.Order_ID || order.id} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
                   <td className="py-3 px-4">
                     <span className="font-mono text-blue-600">
                       {order.FormattedOrderID || `ORD-${order.Order_ID || order.id}`}
@@ -152,10 +152,10 @@ const OrdersTable = () => {
                     {formatTableCurrency(order.gross_total)}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       (order.print_count || 0) === 0 
                         ? 'bg-green-100 text-green-800' 
-                        : 'bg-blue-100 text-blue-800'
+                        : 'bg-orange-100 text-orange-800'
                     }`}>
                       {getPrintLabel(order)}
                     </span>
@@ -165,7 +165,7 @@ const OrdersTable = () => {
                       <button
                         onClick={() => handleViewOrder(order.Order_ID || order.id)}
                         disabled={loadingOrderId === (order.Order_ID || order.id)}
-                        className="flex items-center bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm disabled:bg-blue-400 disabled:cursor-not-allowed"
+                        className="flex items-center   px-3 py-1   text-sm  disabled:cursor-not-allowed"
                         title="View Order Details"
                       >
                         {loadingOrderId === (order.Order_ID || order.id) ? (
@@ -175,23 +175,23 @@ const OrdersTable = () => {
                           </>
                         ) : (
                           <>
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 mr-1" fill="none" stroke="#3F75B0" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            View
+                           
                           </>
                         )}
                       </button>
                       <button
                         onClick={() => handlePrint(order)}
-                        className={`flex items-center text-white px-3 py-1 rounded text-sm ${getPrintButtonClass(order)}`}
+                        className={`flex items-center   px-3 py-1 rounded text-sm ${getPrintButtonClass(order)}`}
                         title="Print Order"
                       >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
-                        Print
+                       
                       </button>
                     </div>
                   </td>

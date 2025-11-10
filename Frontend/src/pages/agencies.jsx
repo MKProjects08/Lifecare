@@ -128,9 +128,9 @@ const Agencies = () => {
         )}
 
         {/* Agencies Table */}
-        <div className="bg-white rounded-lg shadow p-6">
+       
           <AgenciesTable />
-        </div>
+        
       </main>
     </div>
   );

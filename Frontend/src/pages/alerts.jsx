@@ -179,7 +179,7 @@ const Alerts = () => {
               onClick={() => setActiveTab('all')}
               className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
                 activeTab === 'all'
-                  ? 'border-[#29996B] text-[#29996B] '
+                  ? 'border-yellow-600 text-yellow-600 '
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -215,7 +215,7 @@ const Alerts = () => {
         {(activeTab === 'all' || activeTab === 'expiry') && expiryAlerts.length > 0 && (
           <div className="bg-white rounded-lg shadow">
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <h2 className="text-lg font-semibold text-orange-600 flex items-center">
                 <svg className="w-5 h-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -225,7 +225,7 @@ const Alerts = () => {
             <div className="overflow-x-auto">
               <table className="min-w-full table-auto">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-[#E1F2F5]">
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Product Name</th>
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Batch Number</th>
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Expiry Date</th>
@@ -236,7 +236,7 @@ const Alerts = () => {
                 </thead>
                 <tbody>
                   {expiryAlerts.map((alert) => (
-                    <tr key={`expiry-${alert.BatchNumber}`} className="border-b hover:bg-gray-50">
+                    <tr key={`expiry-${alert.BatchNumber}`} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium text-gray-900">{alert.productname}</p>
@@ -272,7 +272,7 @@ const Alerts = () => {
         {(activeTab === 'all' || activeTab === 'stock') && stockAlerts.length > 0 && (
           <div className="bg-white rounded-lg shadow">
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <h2 className="text-lg font-semibold text-red-800 flex items-center">
                 <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
@@ -282,7 +282,7 @@ const Alerts = () => {
             <div className="overflow-x-auto">
               <table className="min-w-full table-auto">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-[#E1F2F5]">
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Product Name</th>
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Batch Number</th>
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Current Quantity</th>
@@ -293,7 +293,7 @@ const Alerts = () => {
                 </thead>
                 <tbody>
                   {stockAlerts.map((alert) => (
-                    <tr key={`stock-${alert.BatchNumber}`} className="border-b hover:bg-gray-50">
+                    <tr key={`stock-${alert.BatchNumber}`} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium text-gray-900">{alert.productname}</p>
@@ -324,6 +324,7 @@ const Alerts = () => {
             </div>
           </div>
         )}
+        
 
         {/* No Alerts Message */}
         {summary.totalAlerts === 0 && (

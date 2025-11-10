@@ -78,7 +78,7 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[80vh] overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Search Products</h2>
+            <h2 className="text-xl font-semibold text-[#3F75B0]">Search Products</h2>
             {selectedAgencyId && (
               <p className="text-sm text-gray-600 mt-1">
                 Filtering by selected agency
@@ -104,7 +104,7 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
                 placeholder="Search by product name, generic name, or batch number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
                 autoFocus
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -147,7 +147,7 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
           ) : filteredProducts.length > 0 ? (
             <div className="overflow-y-auto max-h-96 border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#E1F2F5]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Product Name
@@ -219,7 +219,7 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleSelectProduct(product)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                          className="px-4 py-2 bg-[#048dcc] text-white rounded-md  transition-colors text-sm font-medium flex items-center gap-2  hover:bg-[#3F75B0]"
                           title="Add to invoice"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,7 +274,7 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
                     handleSelectProduct(filteredProducts[0]);
                   }
                 }}
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                className="px-6 py-2 bg-[#29996B]  text-white rounded-md hover:bg-green-700 transition-colors font-medium"
               >
                 Add First Product
               </button>

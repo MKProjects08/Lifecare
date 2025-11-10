@@ -131,11 +131,33 @@ const SalesTable = ({ filters }) => {
           </button>
         </div>
       )}
-
+{/* Totals Section */}
+{filteredSales.length > 0 && (
+        <div className="mt-4 bg-gray-50 rounded-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4">
+              <p className="text-sm text-gray-600">Total Orders</p>
+              <p className="text-2xl font-bold text-gray-800">{totals.count}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-600">
+              <p className="text-sm text-gray-600">Gross Total</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.grossTotal)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-600">
+              <p className="text-sm text-gray-600">Total Discount</p>
+              <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.discount)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-600">
+              <p className="text-sm text-gray-600">Net Total</p>
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.netTotal)}</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full table-auto">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[#E1F2F5]">
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Order ID</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Customer</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Agency</th>
@@ -155,7 +177,7 @@ const SalesTable = ({ filters }) => {
               </tr>
             ) : (
               filteredSales.map((sale) => (
-                <tr key={sale.Order_ID || sale.id} className="border-b hover:bg-gray-50">
+                <tr key={sale.Order_ID || sale.id} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
                   <td className="py-3 px-4">
                     <span className="font-mono text-blue-600">
                       {sale.FormattedOrderID || `ORD-${sale.Order_ID || sale.id}`}
@@ -166,7 +188,7 @@ const SalesTable = ({ filters }) => {
                   <td className="py-3 px-4">{sale.UserName || 'N/A'}</td>
                   <td className="py-3 px-4">{formatDate(sale.created_at)}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       sale.paymentstatus === 'paid' ? 'bg-green-100 text-green-800' :
                       sale.paymentstatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
@@ -187,30 +209,7 @@ const SalesTable = ({ filters }) => {
         </table>
       </div>
 
-      {/* Totals Section */}
-      {filteredSales.length > 0 && (
-        <div className="mt-4 bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Sales Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <p className="text-sm text-gray-600">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-800">{totals.count}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <p className="text-sm text-gray-600">Gross Total</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.grossTotal)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <p className="text-sm text-gray-600">Total Discount</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.discount)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <p className="text-sm text-gray-600">Net Total</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.netTotal)}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Results Count */}
       <div className="mt-4 flex justify-between items-center">

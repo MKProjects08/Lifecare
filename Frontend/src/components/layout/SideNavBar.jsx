@@ -101,19 +101,19 @@ const SideNavBar = ({ userRole = "worker" }) => {
             return (
               <div key={item.path} className="relative">
                 <Link
-  id={href}
-  to={href}
-  className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-    active ? "bg-[#111827] text-[#3F75B0] shadow-lg" : "text-[#3F75B0] hover:bg-gray-200"
-  }`}
->
-  <item.icon
-    className={`w-6 h-6 transition-all ${
-      active ? "text-[#05E27E] text-[15px]" : "text-[#059e40] text-[15px]"
-    }`}
-  />
-  <span className="ml-3 text-base font-medium">{item.label}</span>
-</Link>
+                  id={href}
+                  to={href}
+                  className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    active ? "bg-[#3F75B0] text-white shadow-lg" : "text-[#3F75B0] hover:bg-gray-200"
+                  }`}
+                >
+                  <item.icon
+                    className={`w-6 h-6 transition-all ${
+                      active ? "text-[#05E27E] text-[15px]" : "text-[#059e40] text-[15px]"
+                    }`}
+                  />
+                  <span className="ml-3 text-base font-medium">{item.label}</span>
+                </Link>
 
               </div>
             );

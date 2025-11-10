@@ -249,15 +249,16 @@ const BillingPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Billing</h1>
-            <p className="text-gray-600">Create new order for customers</p>
+    <div className="min-h-screen bg-gray-50  p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold text-[#3F75B0] mb-2">Billing</h2>
           </div>
 
+
+      <div className="mx-auto ">
+        <div className="bg-white rounded-lg shadow-md p-6">
+       
           {/* Invoice Header */}
           <InvoiceHeader
             invoiceData={invoiceData}
@@ -289,7 +290,7 @@ const BillingPage = () => {
             <button
               onClick={handleSubmitInvoice}
               disabled={invoiceItems.length === 0 || loading}
-              className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-2"
+              className="px-6 py-3 bg-[#3F75B0] text-white rounded-md hover:bg-[#3F75B0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-2"
             >
               {loading && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

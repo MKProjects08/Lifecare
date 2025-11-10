@@ -107,7 +107,7 @@ const SignIn = () => {
     <div className="flex items-center justify-center min-h-screen mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center space-y-6 w-full max-w-md">
         <img src={logo} alt="App Logo" className="mx-auto p-2 h-30 w-50 -0  " />
-        <div>mb
+        <div>
           <h2 className="text-[#039e3f] text-3xl leading-9 font-extrabold">
             Sign in to your account
           </h2>

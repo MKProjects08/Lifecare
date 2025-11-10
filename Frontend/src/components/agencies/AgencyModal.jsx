@@ -118,10 +118,12 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">{getTitle()}</h2>
+    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+
+      <div className="px-6 py-4 border-b bg-[#E1F2F5] border-gray-200 flex items-center justify-between">
+
+          <h2 className="text-xl font-bold text-[#3F75B0]">{getTitle()}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -131,11 +133,11 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6 text-left ">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Agency Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Agency Name *
               </label>
               <input
@@ -144,7 +146,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 value={formData.agencyname}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                   errors.agencyname ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter agency name"
@@ -156,7 +158,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
 
             {/* Contact Person */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Contact Person *
               </label>
               <input
@@ -165,7 +167,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 value={formData.contact_person}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                   errors.contact_person ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter contact person name"
@@ -179,7 +181,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Email *
               </label>
               <input
@@ -188,7 +190,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 value={formData.email}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter email address"
@@ -200,7 +202,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Phone *
               </label>
               <input
@@ -209,7 +211,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 value={formData.phone}
                 onChange={handleChange}
                 disabled={mode === 'view'}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                   errors.phone ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter phone number"
@@ -222,7 +224,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
 
           {/* Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[#3F75B0] mb-1">
               Address *
             </label>
             <textarea
@@ -231,7 +233,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
               onChange={handleChange}
               disabled={mode === 'view'}
               rows={3}
-              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                 errors.address ? 'border-red-500' : 'border-gray-300'
               } ${mode === 'view' ? 'bg-gray-100' : ''}`}
               placeholder="Enter full address"
@@ -244,7 +246,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Sales */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Sales ($)
               </label>
               <input
@@ -255,7 +257,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 disabled={mode === 'view'}
                 min="0"
                 step="0.01"
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                   errors.sales ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter sales amount"
@@ -267,7 +269,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
 
             {/* Target */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
                 Target ($)
               </label>
               <input
@@ -278,7 +280,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 disabled={mode === 'view'}
                 min="0"
                 step="0.01"
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-text-[#3F75B0] ${
                   errors.target ? 'border-red-500' : 'border-gray-300'
                 } ${mode === 'view' ? 'bg-gray-100' : ''}`}
                 placeholder="Enter target amount"
@@ -303,7 +305,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                className="px-4 py-2 bg-[#29996B]  text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
               >
                 {loading && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -318,7 +320,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Close
               </button>
