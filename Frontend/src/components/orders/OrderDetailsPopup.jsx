@@ -5,9 +5,9 @@ const OrderDetailsPopup = ({ order, onClose }) => {
 
   // Helper function to safely convert to number and format
   const formatCurrency = (value) => {
-    if (value === null || value === undefined) return '$0.00';
+    if (value === null || value === undefined) return '0.00';
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    return isNaN(numValue) ? '$0.00' : `$${numValue.toFixed(2)}`;
+    return isNaN(numValue) ? '0.00' : `${numValue.toFixed(2)}`;
   };
 
   // Helper function to safely get numbers for calculations
@@ -58,9 +58,6 @@ const OrderDetailsPopup = ({ order, onClose }) => {
             <p className="mb-2">
               <strong>Discount:</strong> {formatCurrency(discountAmount)}
             </p>
-            <p className="mb-2">
-              <strong>Net Total:</strong> {formatCurrency(netTotal)}
-            </p>
             <p>
               <strong>Payment Status:</strong> 
               <span className={`ml-2 px-2 py-1 rounded text-xs ${
@@ -82,11 +79,13 @@ const OrderDetailsPopup = ({ order, onClose }) => {
               <table className="min-w-full bg-white border border-gray-200">
                 <thead>
                   <tr className="bg-[#E1F2F5]">
-                    <th className="py-2 px-4 border-b text-left">Product ID</th>
+                    <th className="py-2 px-4 border-b text-left">Product</th>
                     <th className="py-2 px-4 border-b text-left">Batch Number</th>
-                    <th className="py-2 px-4 border-b text-left">Quantity</th>
-                    <th className="py-2 px-4 border-b text-left">Free Issue Qty</th>
-                    <th className="py-2 px-4 border-b text-left">Total Qty</th>
+                    <th className="py-2 px-4 border-b text-left">Expiry Date</th>
+                    <th className="py-2 px-4 border-b text-left">Qty</th>
+                    <th className="py-2 px-4 border-b text-left">Rate</th>
+                    <th className="py-2 px-4 border-b text-left">Free Qty</th>
+                    <th className="py-2 px-4 border-b text-left">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -94,14 +93,18 @@ const OrderDetailsPopup = ({ order, onClose }) => {
                     const quantity = getNumber(item.quantity);
                     const freeQty = getNumber(item.free_issue_quantity);
                     const totalQty = quantity + freeQty;
+                    const rate = getNumber(item.rate);
+                    const amount = quantity * rate;
                     
                     return (
                       <tr key={index} className="hover:bg-gray-50 text-left border-[#E1F2F5]">
-                        <td className="py-2 px-4 border-b">{item.productId || 'N/A'}</td>
+                        <td className="py-2 px-4 border-b">{item.productName || 'N/A'}</td>
                         <td className="py-2 px-4 border-b">{item.batchNumber || 'N/A'}</td>
+                        <td className="py-2 px-4 border-b">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'}</td>
                         <td className="py-2 px-4 border-b">{quantity}</td>
+                        <td className="py-2 px-4 border-b">{formatCurrency(rate)}</td>
                         <td className="py-2 px-4 border-b">{freeQty}</td>
-                        <td className="py-2 px-4 border-b font-semibold">{totalQty}</td>
+                        <td className="py-2 px-4 border-b">{formatCurrency(amount)}</td>
                       </tr>
                     );
                   })}
@@ -128,10 +131,6 @@ const OrderDetailsPopup = ({ order, onClose }) => {
               <div className="flex justify-between">
                 <span>Discount Applied:</span>
                 <span className="font-semibold text-red-600">-{formatCurrency(discountAmount)}</span>
-              </div>
-              <div className="flex justify-between border-t border-blue-200 pt-1 mt-1">
-                <span>Net Total:</span>
-                <span className="font-semibold text-green-600">{formatCurrency(netTotal)}</span>
               </div>
             </div>
           </div>

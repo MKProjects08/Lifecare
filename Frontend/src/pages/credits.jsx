@@ -23,9 +23,9 @@ const Credit = () => {
         customerService.getAllCustomers()
       ]);
 
-      // Filter only pending orders
+      // Filter only pending orders that have been printed at least once
       const pendingOrders = orders.filter(order => 
-        order.paymentstatus?.toLowerCase() === 'pending'
+        order.paymentstatus?.toLowerCase() === 'pending' && (order.print_count || 0) > 0
       );
 
       // Create a map of customers for easy lookup
@@ -44,7 +44,8 @@ const Credit = () => {
           const customer = customersMap[order.Customer_ID];
           const customerId = customer.Customer_ID || customer.id;
           const pharmacyName = customer.pharmacyname || `Customer ${customerId}`;
-          const netTotal = parseFloat(order.net_total) || 0;
+          // Use gross_total as the order value for credits
+          const orderValue = parseFloat(order.gross_total) || 0;
 
           if (!balancesMap[customerId]) {
             balancesMap[customerId] = {
@@ -56,7 +57,8 @@ const Credit = () => {
             };
           }
 
-          balancesMap[customerId].pendingAmount += netTotal;
+          balancesMap[customerId].pendingAmount += orderValue;
+
           balancesMap[customerId].pendingOrders += 1;
         }
       });
@@ -80,10 +82,8 @@ const Credit = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    const n = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return isNaN(n) ? '0.00' : n.toFixed(2);
   };
 
   const handleRetry = () => {

@@ -17,6 +17,7 @@ import Credits from "./pages/credits";
 import Agency from "./pages/agencies";
 import Customer from "./pages/customers";
 import User from "./pages/users";
+import PrintOrder from "./pages/print-order";
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const token = localStorage.getItem("token");
@@ -70,6 +71,9 @@ function App() {
           </Route>
           <Route path="/orders" element={<AdminLayout />}>
             <Route index element={<Orders />} />
+          </Route>
+          <Route path="/print/:id" element={<AdminLayout />}>
+            <Route index element={<PrintOrder />} />
           </Route>
           <Route path="/settings" element={<AdminLayout />}>
             <Route index element={<Settings />} />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { orderService } from '../../services/orderService';
 import OrderDetailsPopup from './OrderDetailsPopup';
 
@@ -9,6 +10,7 @@ const OrdersTable = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [loadingOrderId, setLoadingOrderId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadOrders();
@@ -44,22 +46,10 @@ const OrdersTable = () => {
     }
   };
 
-  const handlePrint = async (order) => {
-    try {
-      // Increment print count first
-      await orderService.incrementPrintCount(order.Order_ID || order.id);
-      
-      // Reload orders to get updated print count
-      await loadOrders();
-      
-      // Here you can implement your actual print logic
-      console.log('Printing order:', order.FormattedOrderID);
-      alert(`Printing ${order.FormattedOrderID || `ORD-${order.Order_ID || order.id}`}`);
-      
-    } catch (err) {
-      setError('Failed to print order: ' + err.message);
-      console.error('Error printing order:', err);
-    }
+  const handlePrint = (order) => {
+    const oid = order.Order_ID || order.id;
+    if (!oid) return;
+    navigate(`/print/${oid}`);
   };
 
   const getPrintLabel = (order) => {
@@ -76,9 +66,9 @@ const OrdersTable = () => {
 
   // Helper function to safely format currency in table
   const formatTableCurrency = (value) => {
-    if (value === null || value === undefined) return '$0.00';
+    if (value === null || value === undefined) return '0.00';
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    return isNaN(numValue) ? '$0.00' : `$${numValue.toFixed(2)}`;
+    return isNaN(numValue) ? '0.00' : `${numValue.toFixed(2)}`;
   };
 
   if (loading) {
@@ -149,7 +139,16 @@ const OrdersTable = () => {
                   <td className="py-3 px-4">{order.CustomerName || 'N/A'}</td>
                   <td className="py-3 px-4">{order.AgencyName || 'N/A'}</td>
                   <td className="py-3 px-4 font-semibold">
-                    {formatTableCurrency(order.gross_total)}
+                    <div className="flex items-center gap-2">
+                      <span>{formatTableCurrency(order.gross_total)}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        order.paymentstatus === 'paid' ? 'bg-green-100 text-green-800' :
+                        order.paymentstatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {order.paymentstatus || 'unknown'}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${

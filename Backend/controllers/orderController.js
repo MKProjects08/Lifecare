@@ -64,8 +64,27 @@ exports.getOrderById = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
-    
-    res.json(rows[0]);
+
+    // Fetch order items with product details
+    const [itemRows] = await db.query(
+      `SELECT 
+         oi.Product_ID AS productId,
+         oi.BatchNumber AS batchNumber,
+         oi.quantity,
+         oi.free_issue_quantity,
+         p.productname AS productName,
+         p.expiry_date AS expiryDate,
+         p.selling_price AS rate
+       FROM OrderItem oi
+       LEFT JOIN products p ON p.BatchNumber = oi.BatchNumber
+       WHERE oi.Order_ID = ?`,
+      [id]
+    );
+
+    const order = rows[0];
+    order.items = Array.isArray(itemRows) ? itemRows : [];
+
+    res.json(order);
   } catch (err) {
     console.error('Error in getOrderById:', err);
     res.status(500).json({ error: err.message });
@@ -206,13 +225,40 @@ console.log("orderSql executed");
         throw new Error(`Invalid quantity for item ${itemsCount + 1}: quantity must be greater than 0`);
       }
 
+      // Calculate total to deduct (ordered + free items)
+      const orderedQty = parseInt(item.quantity) || 0;
+      const freeQty = parseInt(item.free_issue_quantity) || 0;
+      const totalToDeduct = orderedQty + freeQty;
+
+      // 2.1 Check current stock and lock the row to prevent race conditions
+      const [stockRows] = await connection.query(
+        `SELECT quantity FROM products WHERE BatchNumber = ? FOR UPDATE`,
+        [item.batchNumber]
+      );
+
+      if (!stockRows || stockRows.length === 0) {
+        throw new Error(`Product with batch ${item.batchNumber} not found`);
+      }
+
+      const currentQty = parseInt(stockRows[0].quantity) || 0;
+      if (currentQty < totalToDeduct) {
+        throw new Error(`Insufficient stock for batch ${item.batchNumber}. Available: ${currentQty}, required: ${totalToDeduct}`);
+      }
+
+      // 2.2 Insert order item
       await connection.query(itemSql, [
         orderId,
         item.productId,
         item.batchNumber,
-        parseInt(item.quantity) || 0,
-        parseInt(item.free_issue_quantity) || 0
+        orderedQty,
+        freeQty
       ]);
+
+      // 2.3 Deduct inventory
+      await connection.query(
+        `UPDATE products SET quantity = quantity - ? WHERE BatchNumber = ?`,
+        [totalToDeduct, item.batchNumber]
+      );
       
       itemsCount++;
     }
