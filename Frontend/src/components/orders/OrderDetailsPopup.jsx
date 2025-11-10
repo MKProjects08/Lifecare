@@ -23,10 +23,10 @@ const OrderDetailsPopup = ({ order, onClose }) => {
   const netTotal = getNumber(order.net_total);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 b flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Order Details - {order.FormattedOrderID || `ORD-${order.Order_ID || order.id}`}</h2>
+          <h2 className="text-xl font-bold text-[#3F75B0] text-bold">Order Details - {order.FormattedOrderID || `ORD-${order.Order_ID || order.id}`}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -36,7 +36,7 @@ const OrderDetailsPopup = ({ order, onClose }) => {
         </div>
 
         {/* Order Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-[#E1F2F5] rounded">
           <div>
             <p className="mb-2">
               <strong>Customer:</strong> {order.CustomerName || 'N/A'}
@@ -81,7 +81,7 @@ const OrderDetailsPopup = ({ order, onClose }) => {
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border border-gray-200">
                 <thead>
-                  <tr className="bg-gray-100">
+                  <tr className="bg-[#E1F2F5]">
                     <th className="py-2 px-4 border-b text-left">Product ID</th>
                     <th className="py-2 px-4 border-b text-left">Batch Number</th>
                     <th className="py-2 px-4 border-b text-left">Quantity</th>
@@ -96,7 +96,7 @@ const OrderDetailsPopup = ({ order, onClose }) => {
                     const totalQty = quantity + freeQty;
                     
                     return (
-                      <tr key={index} className="hover:bg-gray-50">
+                      <tr key={index} className="hover:bg-gray-50 text-left border-[#E1F2F5]">
                         <td className="py-2 px-4 border-b">{item.productId || 'N/A'}</td>
                         <td className="py-2 px-4 border-b">{item.batchNumber || 'N/A'}</td>
                         <td className="py-2 px-4 border-b">{quantity}</td>
@@ -170,7 +170,7 @@ const OrderDetailsPopup = ({ order, onClose }) => {
         <div className="flex justify-end mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200"
+            className="px-4 py-2 bg-gray-200 text-black rounded hover:bg-gray-300 transition duration-200"
           >
             Close
           </button>

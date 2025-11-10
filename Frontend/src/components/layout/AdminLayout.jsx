@@ -139,7 +139,7 @@ const AdminLayout = () => {
           </div>
         </header>
         {/* Main content - scrollable area below the fixed header, full width */}
-        <main className="flex-1 min-h-0 overflow-y-auto bg-white w-full ">
+        <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50 w-full ">
           <Outlet /> {/* Replace children with Outlet */}
         </main>
         <ToastContainer

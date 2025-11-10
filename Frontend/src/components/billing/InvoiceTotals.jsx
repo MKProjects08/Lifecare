@@ -5,9 +5,9 @@ const InvoiceTotals = ({ grossTotal, discount, freeQuantityDiscount, onDiscountC
   const totalDiscount = discount + freeQuantityDiscount;
 
   return (
-    <div className="border-t border-gray-200 pt-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md ml-auto">
-        <div className="text-right">
+    <div className="border-t border-gray-200 pt-6 ">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-md ml-auto bg-green-50 rounded">
+        <div className="text-right ">
           <p className="text-sm font-medium text-gray-700">Gross Total:</p>
           <p className="text-lg font-semibold text-gray-900">{grossTotal.toFixed(2)}</p>
         </div>

@@ -127,9 +127,9 @@ const Customers = () => {
         )}
 
         {/* Customers Table */}
-        <div className="bg-white rounded-lg shadow p-6">
+       
           <CustomersTable />
-        </div>
+       
       </main>
     </div>
   );
