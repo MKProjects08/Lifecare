@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { userService } from "../services/userService";
+import { API_BASE_URL, getHeaders, handleResponse } from "../services/productService";
 
 const Settings = () => {
   const [loading, setLoading] = useState(true);
@@ -7,6 +8,7 @@ const Settings = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -93,6 +95,24 @@ const Settings = () => {
     }
   };
 
+  const handleBackup = async () => {
+    try {
+      setError("");
+      setSuccess("");
+      setBackingUp(true);
+      const resp = await fetch(`${API_BASE_URL}/backup/email`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
+      await handleResponse(resp);
+      setSuccess("Backup created and emailed successfully.");
+    } catch (err) {
+      setError(err.message || "Failed to send backup email");
+    } finally {
+      setBackingUp(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setError("");
@@ -136,6 +156,13 @@ const Settings = () => {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold text-[#3F75B0]">Settings</h1>
           <div className="flex gap-2">
+            <button
+              onClick={handleBackup}
+              className="bg-[#29996B] text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              disabled={backingUp}
+            >
+              {backingUp ? "Sending Backup..." : "Backup Database"}
+            </button>
             <button onClick={loadUser} className="bg-[#048dcc] text-white px-4 py-2 rounded-lg hover:bg-[#3F75B0]">
               Refresh
             </button>
