@@ -8,6 +8,7 @@ const orderRoutes = require('./routes/orders');
 const orderItemRoutes = require('./routes/orderItems');
 const agencyRoutes = require('./routes/agencies');
 const authRoutes = require('./routes/authroute');
+const analyticsRoutes = require('./routes/analytics');
 const { authMiddleware, roleMiddleware } = require('./middleware/authmiddleware');
 require('dotenv').config();
 
@@ -60,6 +61,12 @@ app.use('/api/order-items',
   authMiddleware, 
   roleMiddleware(['admin', 'worker']), // Admin has full access
   orderItemRoutes
+);
+
+app.use('/api/analytics',
+  authMiddleware,
+  roleMiddleware(['admin','worker']),
+  analyticsRoutes
 );
 
 // Dashboard routes
