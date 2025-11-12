@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { orderService } from '../services/orderService';
 import { customerService } from '../services/customerService';
 
 const Credit = () => {
   const [customerBalances, setCustomerBalances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [totalPendingBalance, setTotalPendingBalance] = useState(0);
+  const [totalCredits, setTotalCredits] = useState(0);
+  const [withCreditsCount, setWithCreditsCount] = useState(0);
 
   useEffect(() => {
     loadCustomerBalances();
@@ -17,62 +17,33 @@ const Credit = () => {
       setLoading(true);
       setError('');
 
-      // Get all orders and customers
-      const [orders, customers] = await Promise.all([
-        orderService.getAllOrders(),
-        customerService.getAllCustomers()
-      ]);
+      const customers = await customerService.getAllCustomers();
+      const toNumber = (v) => {
+        const n = typeof v === 'string' ? parseFloat(v) : v;
+        return isNaN(n) ? 0 : n;
+      };
 
-      // Filter only pending orders that have been printed at least once
-      const pendingOrders = orders.filter(order => 
-        order.paymentstatus?.toLowerCase() === 'pending' && (order.print_count || 0) > 0
-      );
+      const balancesArray = customers
+        .map((c) => {
+          const customerId = c.Customer_ID || c.id;
+          const pharmacyName = c.pharmacyname || `Customer ${customerId}`;
+          const credits = toNumber(c.credits);
+          return {
+            customerId,
+            pharmacyName,
+            credits,
+            statusLabel: credits > 0 ? 'Has Credit' : 'No Credit',
+            customerData: c
+          };
+        })
+        .sort((a, b) => b.credits - a.credits);
 
-      // Create a map of customers for easy lookup
-      const customersMap = {};
-      customers.forEach(customer => {
-        const customerId = customer.Customer_ID || customer.id;
-        customersMap[customerId] = customer;
-      });
-
-      // Calculate balance for each customer
-      const balancesMap = {};
-
-      // Calculate pending amounts from orders
-      pendingOrders.forEach(order => {
-        if (order.Customer_ID && customersMap[order.Customer_ID]) {
-          const customer = customersMap[order.Customer_ID];
-          const customerId = customer.Customer_ID || customer.id;
-          const pharmacyName = customer.pharmacyname || `Customer ${customerId}`;
-          // Use gross_total as the order value for credits
-          const orderValue = parseFloat(order.gross_total) || 0;
-
-          if (!balancesMap[customerId]) {
-            balancesMap[customerId] = {
-              customerId,
-              pharmacyName,
-              pendingAmount: 0,
-              pendingOrders: 0,
-              customerData: customer
-            };
-          }
-
-          balancesMap[customerId].pendingAmount += orderValue;
-
-          balancesMap[customerId].pendingOrders += 1;
-        }
-      });
-
-      // Convert to array and sort by highest pending amount
-      const balancesArray = Object.values(balancesMap)
-        .filter(customer => customer.pendingAmount > 0)
-        .sort((a, b) => b.pendingAmount - a.pendingAmount);
-
-      // Calculate total pending balance
-      const totalBalance = balancesArray.reduce((sum, customer) => sum + customer.pendingAmount, 0);
+      const total = balancesArray.reduce((sum, c) => sum + c.credits, 0);
+      const withCredits = balancesArray.filter(c => c.credits > 0).length;
 
       setCustomerBalances(balancesArray);
-      setTotalPendingBalance(totalBalance);
+      setTotalCredits(total);
+      setWithCreditsCount(withCredits);
     } catch (err) {
       setError('Failed to load customer credit data: ' + err.message);
       console.error('Error loading customer balances:', err);
@@ -159,10 +130,8 @@ const Credit = () => {
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-gray-600">Total Pending Orders</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {customerBalances.reduce((sum, customer) => sum + customer.pendingOrders, 0)}
-              </p>
+              <p className="text-sm text-gray-600">Customers With Credit</p>
+              <p className="text-2xl font-bold text-gray-800">{withCreditsCount}</p>
             </div>
             <div className="bg-yellow-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,8 +144,8 @@ const Credit = () => {
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-gray-600">Total Pending Balance</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(totalPendingBalance)}</p>
+              <p className="text-sm text-gray-600">Total Credits</p>
+              <p className="text-2xl font-bold text-red-600">{formatCurrency(totalCredits)}</p>
             </div>
             <div className="bg-red-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,21 +164,20 @@ const Credit = () => {
               <tr className="bg-[#E1F2F5]">
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Pharmacy Name</th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Customer ID</th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700">Pending Orders</th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700">Pending Amount</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Credits Amount</th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
               </tr>
             </thead>
             <tbody>
               {customerBalances.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-8 px-4 text-center text-gray-500">
+                  <td colSpan="4" className="py-8 px-4 text-center text-gray-500">
                     <div className="flex flex-col items-center">
                       <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <p className="text-lg font-medium">No pending payments</p>
-                      <p className="text-sm">All customers have cleared their payments</p>
+                      <p className="text-lg font-medium">No customers found</p>
+                      <p className="text-sm">Add customers to see credit values</p>
                     </div>
                   </td>
                 </tr>
@@ -223,18 +191,11 @@ const Credit = () => {
                       <span className="text-sm text-gray-500 font-mono">#{customer.customerId}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {customer.pendingOrders} order(s)
-                      </span>
+                      <p className="text-lg font-bold text-red-600">{formatCurrency(customer.credits)}</p>
                     </td>
                     <td className="py-3 px-4">
-                      <p className="text-lg font-bold text-red-600">
-                        {formatCurrency(customer.pendingAmount)}
-                      </p>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Pending Payment
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${customer.credits > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                        {customer.statusLabel}
                       </span>
                     </td>
                   </tr>
@@ -249,10 +210,10 @@ const Credit = () => {
           <div className="border-t border-[#E1F2F5] bg-gray-50 px-4 py-3">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {customerBalances.length} customers with pending payments
+                Showing {customerBalances.length} customers and their credits
               </div>
               <div className="text-sm font-semibold text-gray-800 bg-[#b8dae3] px-2.5 py-0.5 rounded-full">
-                Total Outstanding: <span className="text-red-600">{formatCurrency(totalPendingBalance)}</span>
+                Total Credits: <span className="text-red-600">{formatCurrency(totalCredits)}</span>
               </div>
             </div>
           </div>
@@ -268,8 +229,7 @@ const Credit = () => {
             </svg>
             <div>
               <p className="text-sm text-orange-800">
-                <strong>Note:</strong> This page shows the total pending amount for each customer where payment status is "pending". 
-                The amounts are calculated based on the net total of unpaid orders and displayed with actual pharmacy names.
+                <strong>Note:</strong> This page shows the credits stored on each customer record. Values are read directly from the Customers table.
               </p>
             </div>
           </div>

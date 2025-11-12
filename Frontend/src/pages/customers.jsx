@@ -20,7 +20,11 @@ const Customers = () => {
       const customers = await customerService.getAllCustomers();
       const activeCustomers = customers.filter(customer => customer.is_active !== false).length;
       const customersWithCredits = customers.filter(customer => (customer.credits || 0) > 0).length;
-      const totalCredits = customers.reduce((sum, customer) => sum + (customer.credits || 0), 0);
+      const toNumber = (v) => {
+        const n = typeof v === 'string' ? parseFloat(v) : v;
+        return isNaN(n) ? 0 : n;
+      };
+      const totalCredits = customers.reduce((sum, customer) => sum + toNumber(customer.credits), 0);
 
       setStats({
         total: customers.length,
@@ -40,10 +44,8 @@ const Customers = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    const n = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return isNaN(n) ? '0.00' : n.toFixed(2);
   };
 
   return (
@@ -52,8 +54,7 @@ const Customers = () => {
       <main className="p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          
-            <h2 className="text-3xl font-bold text-[#3F75B0]">Pharmacy Management</h2>
+          <h2 className="text-3xl font-bold text-[#3F75B0]">Pharmacy Management</h2>
           <button
             onClick={refreshData}
             className="bg-[#048dcc] text-white px-4 py-2 rounded-lg hover:bg-[#3F75B0] flex items-center transition-colors duration-200"
@@ -110,19 +111,7 @@ const Customers = () => {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600">Total Credits</p>
-                  <p className="text-2xl font-bold text-purple-600">{formatCurrency(stats.totalCredits)}</p>
-                </div>
-                <div className="bg-purple-100 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+            
           </div>
         )}
 
