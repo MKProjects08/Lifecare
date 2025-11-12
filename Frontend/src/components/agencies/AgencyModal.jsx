@@ -14,7 +14,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (agency && mode === 'edit') {
+    if (agency && (mode === 'edit' || mode === 'view')) {
       setFormData({
         agencyname: agency.agencyname || '',
         contact_person: agency.contact_person || '',

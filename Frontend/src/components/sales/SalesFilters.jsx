@@ -64,7 +64,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
       // Map customers
       const mappedCustomers = customersData.map(customer => ({
         id: customer.Customer_ID || customer.id,
-        name: customer.CustomerName || customer.name || `Customer ${customer.Customer_ID || customer.id}`
+        name: customer.pharmacyname || customer.name || `Customer ${customer.Customer_ID || customer.id}`
       }));
       
       // Map agencies
@@ -76,7 +76,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
       // Map users
       const mappedUsers = usersData.map(user => ({
         id: user.User_ID || user.id,
-        name: user.UserName || user.name || `User ${user.User_ID || user.id}`
+        name: user.username || user.name || `User ${user.User_ID || user.id}`
       }));
 
       setCustomers(mappedCustomers);
