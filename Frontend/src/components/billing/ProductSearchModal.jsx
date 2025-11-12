@@ -10,12 +10,8 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (searchTerm.length >= 2) {
-      searchProducts();
-    } else {
-      setFilteredProducts([]);
-      setError(null);
-    }
+    // Always fetch and filter products; show all by default and filter as user types
+    searchProducts();
   }, [searchTerm, selectedAgencyId]);
 
   const searchProducts = async () => {
@@ -115,7 +111,7 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
             </div>
             <div className="flex justify-between items-center mt-2">
               <p className="text-xs text-gray-500">
-                {searchTerm.length >= 2 ? `Searching for: "${searchTerm}"` : 'Type at least 2 characters to search'}
+                {searchTerm ? `Filtering for: "${searchTerm}"` : 'Showing all products'}
               </p>
               {filteredProducts.length > 0 && (
                 <p className="text-xs text-green-600 font-medium">
@@ -233,24 +229,14 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
                 </tbody>
               </table>
             </div>
-          ) : searchTerm.length >= 2 && !loading ? (
+          ) : (
             <div className="text-center py-12 text-gray-500">
               <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-lg font-medium text-gray-600 mb-2">No products found</p>
               <p className="text-sm text-gray-500">
-                No products matching "{searchTerm}"{selectedAgencyId ? ' for the selected agency' : ''}
-              </p>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <p className="text-lg font-medium text-gray-600">Search Products</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Type at least 2 characters to search products by name, generic name, or batch number
+                {searchTerm ? `No products matching "${searchTerm}"${selectedAgencyId ? ' for the selected agency' : ''}` : 'No active products available'}
               </p>
             </div>
           )}

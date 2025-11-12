@@ -15,7 +15,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.query("SELECT * FROM users WHERE UserID = ?", [id]);
+    const [rows] = await db.query("SELECT * FROM users WHERE User_ID = ?", [id]);
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
     res.json(rows[0]);
   } catch (err) {
@@ -59,7 +59,7 @@ exports.updateUser = async (req, res) => {
       params.push(hashedPassword);
     }
 
-    sql += " WHERE UserID=?";
+    sql += " WHERE User_ID=?";
     params.push(id);
 
     const [result] = await db.query(sql, params);
@@ -77,7 +77,7 @@ exports.deleteUser = async (req, res) => {
     const { id } = req.params;
 
     const [result] = await db.query(
-      "UPDATE Users SET is_active = FALSE WHERE User_ID = ?",
+      "UPDATE users SET is_active = FALSE WHERE User_ID = ?",
       [id]
     );
 

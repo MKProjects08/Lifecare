@@ -163,7 +163,6 @@ const CustomersTable = () => {
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Owner Name</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Email</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Phone</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Credits</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
               <th className="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
             </tr>
@@ -171,7 +170,7 @@ const CustomersTable = () => {
           <tbody>
             {customers.length === 0 ? (
               <tr>
-                <td colSpan="7" className="py-8 px-4 text-center text-gray-500">
+                <td colSpan="6" className="py-8 px-4 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -209,11 +208,6 @@ const CustomersTable = () => {
                   </td>
                   <td className="py-3 px-4">
                     <p className="text-gray-900">{customer.phone}</p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCreditBadgeClass(customer.credits)}`}>
-                      {formatCurrency(customer.credits || 0)}
-                    </span>
                   </td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(customer.is_active)}`}>

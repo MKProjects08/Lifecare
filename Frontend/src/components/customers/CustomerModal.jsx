@@ -7,8 +7,10 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
     phone: '',
     address: '',
     email: '',
-    credits: 0
+    credits: 0,
+    is_active: true
   });
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +22,8 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
         phone: customer.phone || '',
         address: customer.address || '',
         email: customer.email || '',
-        credits: customer.credits || 0
+        credits: customer.credits || 0,
+        is_active: customer.is_active !== false
       });
     } else {
       // Reset form for add mode
@@ -30,7 +33,8 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
         phone: '',
         address: '',
         email: '',
-        credits: 0
+        credits: 0,
+        is_active: true
       });
     }
   }, [customer, mode]);
@@ -69,12 +73,12 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value
+      [name]: type === 'number' ? (parseFloat(value) || 0) : (type === 'checkbox' ? !!checked : value)
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -86,7 +90,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -113,7 +117,7 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg  w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      <div className="px-6 py-4 border-b bg-[#E1F2F5] border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b bg-[#E1F2F5] border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">{getTitle()}</h2>
           <button
             onClick={onClose}
@@ -232,6 +236,21 @@ const CustomerModal = ({ customer, mode, onClose, onSave }) => {
             {errors.address && (
               <p className="text-red-500 text-xs mt-1">{errors.address}</p>
             )}
+          </div>
+
+          {/* Active Status */}
+          <div className="flex items-center gap-3">
+            <label className="block text-sm font-medium text-[#3F75B0]">
+              Active
+            </label>
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={!!formData.is_active}
+              onChange={handleChange}
+              disabled={mode === 'view'}
+              className="h-4 w-4"
+            />
           </div>
 
           {/* Credits */}

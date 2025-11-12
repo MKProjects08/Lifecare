@@ -76,7 +76,7 @@ exports.getOrderById = async (req, res) => {
          p.expiry_date AS expiryDate,
          p.selling_price AS rate
        FROM OrderItem oi
-       LEFT JOIN products p ON p.BatchNumber = oi.BatchNumber
+       LEFT JOIN products p ON p.Product_ID = oi.Product_ID AND p.BatchNumber = oi.BatchNumber
        WHERE oi.Order_ID = ?`,
       [id]
     );
@@ -285,37 +285,60 @@ console.log("All items inserted");
   }
 };
 
-// ✅ Update order - FIXED: Use Order_ID instead of id
+// ✅ Update order - transactional and adjust customer credits when needed
 exports.updateOrder = async (req, res) => {
+  const connection = await db.getConnection();
   try {
     const { id } = req.params;
-    const { 
-      Customer_ID, 
-      Agency_ID, 
-      User_ID, 
-      paid_date, 
-      paymentstatus, 
-      print_count, 
-      gross_total, 
-      net_total, 
-      discount_amount 
+    const {
+      Customer_ID,
+      Agency_ID,
+      User_ID,
+      paid_date,
+      paymentstatus,
+      print_count,
+      gross_total,
+      net_total,
+      discount_amount,
     } = req.body;
 
     // Validate required fields
     if (!Agency_ID || !User_ID || gross_total === undefined || net_total === undefined) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: Agency_ID, User_ID, gross_total, net_total are required' 
+      await connection.rollback?.();
+      return res.status(400).json({
+        error: 'Missing required fields: Agency_ID, User_ID, gross_total, net_total are required',
       });
     }
 
-    const sql = `
+    await connection.beginTransaction();
+
+    // 1) Read existing order state
+    const [existingRows] = await connection.query(
+      `SELECT Order_ID, Customer_ID AS ExistingCustomer_ID, paymentstatus AS ExistingStatus, print_count AS ExistingPrintCount, gross_total AS ExistingGross
+       FROM Orders WHERE Order_ID = ? FOR UPDATE`,
+      [id]
+    );
+
+    if (!existingRows || existingRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const existing = existingRows[0];
+    const prevPrintCount = parseInt(existing.ExistingPrintCount) || 0;
+    const prevStatus = existing.ExistingStatus || 'pending';
+    const prevCustomerId = existing.ExistingCustomer_ID;
+    const orderGross = parseFloat(gross_total) || 0;
+
+    // 2) Update order
+    const updateSql = `
       UPDATE Orders
-      SET Customer_ID=?, Agency_ID=?, User_ID=?, paid_date=?, paymentstatus=?, 
+      SET Customer_ID=?, Agency_ID=?, User_ID=?, paid_date=?, paymentstatus=?,
           print_count=?, gross_total=?, net_total=?, discount_amount=?
       WHERE Order_ID=?
     `;
-    
-    const [result] = await db.query(sql, [
+
+    const [result] = await connection.query(updateSql, [
       Customer_ID || null,
       Agency_ID,
       User_ID,
@@ -325,17 +348,57 @@ exports.updateOrder = async (req, res) => {
       parseFloat(gross_total) || 0,
       parseFloat(net_total) || 0,
       parseFloat(discount_amount) || 0,
-      id
+      id,
     ]);
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Order not found" });
+      await connection.rollback();
+      return res.status(404).json({ message: 'Order not found' });
     }
 
-    res.json({ message: "Order updated successfully" });
+    // 3) Adjust customer credits and agency sales if applicable
+    // We apply rules against the previous state:
+    // - If print_count increased from 0 to >0 (first print), add gross_total to customer's credits
+    // - If paymentstatus changed from not paid to paid, deduct gross_total from customer's credits
+    const newPrintCount = parseInt(print_count) || 0;
+    const newStatus = paymentstatus || 'paid';
+    const effectiveCustomerId = Customer_ID || prevCustomerId;
+    const effectiveAgencyId = Agency_ID;
+
+    // Add on first print: customer credits and agency sales
+    if (prevPrintCount === 0 && newPrintCount > 0 && orderGross > 0) {
+      if (effectiveCustomerId) {
+      await connection.query(
+        `UPDATE Customers SET credits = credits + ? WHERE Customer_ID = ?`,
+        [orderGross, effectiveCustomerId]
+      );
+      }
+      if (effectiveAgencyId) {
+        await connection.query(
+          `UPDATE Agency SET sales = COALESCE(sales, 0) + ? WHERE Agency_ID = ?`,
+          [orderGross, effectiveAgencyId]
+        );
+      }
+    }
+
+    // Deduct on status change to paid
+    const wasPaid = String(prevStatus).toLowerCase() === 'paid';
+    const nowPaid = String(newStatus).toLowerCase() === 'paid';
+    if (!wasPaid && nowPaid && effectiveCustomerId && orderGross > 0) {
+      await connection.query(
+        `UPDATE Customers SET credits = credits - ? WHERE Customer_ID = ?`,
+        [orderGross, effectiveCustomerId]
+      );
+    }
+
+    await connection.commit();
+    res.json({ message: 'Order updated successfully' });
   } catch (err) {
+    try { await connection.rollback(); } catch {}
     console.error('Error in updateOrder:', err);
     res.status(500).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 };
 
