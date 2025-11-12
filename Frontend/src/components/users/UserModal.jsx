@@ -13,17 +13,7 @@ const UserModal = ({ user, mode, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user && mode === 'edit') {
-      setFormData({
-        username: user.username || '',
-        password: '', // Don't pre-fill password for security
-        role: user.role || 'worker',
-        email: user.email || '',
-        phone: user.phone || '',
-        is_active: user.is_active !== false
-      });
-    } else {
-      // Reset form for add mode
+    if (mode === 'add') {
       setFormData({
         username: '',
         password: '',
@@ -31,6 +21,15 @@ const UserModal = ({ user, mode, onClose, onSave }) => {
         email: '',
         phone: '',
         is_active: true
+      });
+    } else if (user && (mode === 'edit' || mode === 'view')) {
+      setFormData({
+        username: user.username || '',
+        password: '',
+        role: user.role || 'worker',
+        email: user.email || '',
+        phone: user.phone || '',
+        is_active: user.is_active !== false
       });
     }
   }, [user, mode]);
@@ -126,27 +125,33 @@ const UserModal = ({ user, mode, onClose, onSave }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left p-6">
-          {/* Username */}
-          <div>
-            <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-              Username *
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              disabled={mode === 'view'}
-              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
-                errors.username ? 'border-red-500' : 'border-gray-300'
-              } ${mode === 'view' ? 'bg-gray-100' : ''}`}
-              placeholder="Enter username"
-            />
-            {errors.username && (
-              <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-            )}
-          </div>
+         {/* Username */}
+            <div>
+              <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+                Username *
+              </label>
+              {mode === 'view' ? (
+                <p className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700">
+                  {formData.username || '-'}
+                </p>
+              ) : (
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] ${
+                    errors.username ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter username"
+                />
+              )}
+              {errors.username && mode !== 'view' && (
+                <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+              )}
+            </div>
 
+            
           {/* Password */}
           {(mode === 'add' || mode === 'edit') && (
             <div>
