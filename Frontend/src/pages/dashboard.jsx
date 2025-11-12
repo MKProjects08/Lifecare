@@ -47,7 +47,7 @@ const Dashboard = () => {
   return (
     <div className="p-6 bg-gradient-to-b from-[#F4FAFD] to-white">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#3F75B0]">Dashboard</h1>
+        <h2 className="text-3xl font-bold text-[#3F75B0]">Dashboard</h2>
         <button
           onClick={() => window.location.reload()}
           className="bg-[#048dcc] text-white px-4 py-2 rounded-lg hover:bg-[#3F75B0] shadow"

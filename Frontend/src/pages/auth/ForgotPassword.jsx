@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const PRIMARY = "#048dcc";
-const TEXT1 = "#1F2937"; // Assuming a dark text color; adjust as needed
+const TEXT1 = "#1F2937";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -32,25 +32,30 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      // Hardcoded response for demo - simulates successful temp password generation
-      const data = {
-        success: true,
-        data: {
-          tempPassword: "TempPass123!", // Hardcoded temp password
-          username: email, // Use email as username
+      const response = await fetch('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      };
+        body: JSON.stringify({ email }),
+      });
 
-      if (data.success) {
-        toast.success("Temporary password generated and sent to email");
-        localStorage.setItem("tempPassword", data.data.tempPassword);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success(data.message || "Temporary password sent to your email");
+        localStorage.setItem("resetEmail", email);
         localStorage.setItem("username", data.data.username);
-        navigate("/reset-password");
+        
+        setTimeout(() => {
+          navigate("/reset-password");
+        }, 1500);
       } else {
-        toast.error(data.message || "Failed to generate temporary password.");
+        toast.error(data.message || "Failed to send temporary password.");
       }
     } catch (err) {
-      toast.error(err.message || "Something went wrong.");
+      console.error('Forgot password error:', err);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -66,11 +71,11 @@ const ForgotPassword = () => {
         <img src={logo} alt="Logo" className="mx-auto p-2 w-50 h-30" />
 
         <div>
-          <h2 s className="text-3xl leading-9 font-extrabold text-[#039e3f]">
+          <h2 className="text-3xl leading-9 font-extrabold text-[#039e3f]">
             Reset password
           </h2>
           <p className="text-gray-500 text-sm leading-tight mt-2">
-            Enter your email address, and we’ll send a temporary password. Use
+            Enter your email address, and we'll send a temporary password. Use
             it to reset your password.
           </p>
         </div>
@@ -92,7 +97,7 @@ const ForgotPassword = () => {
             </div>
 
             <button
-              className={`rounded-md p-4 w-full mt-4 font-medium ${
+              className={`rounded-md p-4 w-full mt-4 font-medium mb-0 ${
                 !email ? "opacity-70 cursor-not-allowed" : ""
               }`}
               onClick={handleSubmit}
@@ -104,12 +109,22 @@ const ForgotPassword = () => {
             >
               Confirm
             </button>
+
+            {/* Back to Sign In */}
+            <div className="text-center ">
+              <button
+                onClick={() => navigate("/")}
+                className="text-[#048dcc] hover:text-[#036a9e] font-medium text-m"
+              >
+                ← Back to Sign In
+              </button>
+            </div>
           </div>
         ) : (
           <Loading />
         )}
         <ToastContainer
-          position="top-right z-40"
+          position="top-right"
           autoClose={3000}
           hideProgressBar={false}
           closeOnClick

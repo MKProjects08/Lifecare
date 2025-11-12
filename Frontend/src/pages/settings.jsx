@@ -151,10 +151,10 @@ const Settings = () => {
   };
 
   return (
-    <div className="p-6 flex items-center justify-center min-h-[calc(100vh-4rem)]">
-      <div className="w-full max-w-3xl">
+    <div className="p-6 flex ">
+      <div className="w-full ">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold text-[#3F75B0]">Settings</h1>
+          <h2 className="text-3xl font-bold text-[#3F75B0]">Settings</h2>
           <div className="flex gap-2">
             <button
               onClick={handleBackup}

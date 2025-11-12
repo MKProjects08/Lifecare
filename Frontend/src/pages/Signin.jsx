@@ -152,7 +152,7 @@ const SignIn = () => {
               className="self-stretch text-right justify-start text-gray-700 text-base font-medium font-['Inter'] leading-normal cursor-pointer hover:underline"
               onClick={handleForgotPassword}
             >
-              Forgotten password
+              Forgot password
             </div>
 
             {errors.login && (
