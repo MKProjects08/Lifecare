@@ -39,7 +39,7 @@ const AdminLayout = () => {
 
     localStorage.clear();
     sessionStorage.clear();
-    navigate("/signin");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -119,7 +119,7 @@ const AdminLayout = () => {
 
             {/* Dropdown Menu */}
             {isDropdownVisible && (
-              <div className="fixed inset-0 bg-black bg-opacity-25 z-50 w-full">
+              <div className="fixed inset-0 bg-black/50 bg-opacity-25 z-50 w-full">
                 <div
                   ref={dropdownRef}
                   className="absolute top-16 right-4 sm:right-20 bg-white rounded-md w-40 z-60"
