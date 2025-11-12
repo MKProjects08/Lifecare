@@ -1,3 +1,5 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -9,8 +11,8 @@ const orderItemRoutes = require('./routes/orderItems');
 const agencyRoutes = require('./routes/agencies');
 const authRoutes = require('./routes/authroute');
 const analyticsRoutes = require('./routes/analytics');
+const backupRoutes = require('./routes/backup');
 const { authMiddleware, roleMiddleware } = require('./middleware/authmiddleware');
-require('dotenv').config();
 
 const app = express();
 
@@ -67,6 +69,12 @@ app.use('/api/analytics',
   authMiddleware,
   roleMiddleware(['admin','worker']),
   analyticsRoutes
+);
+
+app.use('/api/backup',
+  authMiddleware,
+  roleMiddleware(['admin']),
+  backupRoutes
 );
 
 // Dashboard routes
