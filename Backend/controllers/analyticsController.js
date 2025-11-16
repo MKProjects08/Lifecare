@@ -35,6 +35,90 @@ exports.getSalesLast10Days = async (req, res) => {
   }
 };
 
+
+exports.getSalesCurrentMonth = async (req, res) => {
+  try {
+    /* -------------------------------------------------
+       1. Pull raw data for the current month only
+       ------------------------------------------------- */
+    const [rows] = await db.query(`
+      SELECT 
+        DATE(created_at)               AS date,
+        COALESCE(SUM(gross_total), 0) AS total
+      FROM Orders
+      WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+        AND created_at <  DATE_FORMAT(LAST_DAY(CURDATE()), '%Y-%m-%d') + INTERVAL 1 DAY
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `);
+
+    // Normalise to Map<YYYY-MM-DD, total>
+    const map = new Map(
+      rows.map(r => [
+        r.date.toISOString().slice(0, 10),   // "2025-11-04"
+        parseFloat(r.total) || 0,
+      ])
+    );
+
+    /* -------------------------------------------------
+       2. Build a full list of dates for the month
+       ------------------------------------------------- */
+    const now      = new Date();
+    const year     = now.getFullYear();
+    const month    = now.getMonth();                 // 0-based
+    const firstDay = new Date(year, month, 1);       // 1st of month
+    const lastDay  = new Date(year, month + 1, 0);   // last day of month
+
+    const series = [];
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const iso = d.toISOString().slice(0, 10);
+      series.push({ date: iso, total: map.get(iso) ?? 0 });
+    }
+
+    /* -------------------------------------------------
+       3. Respond
+       ------------------------------------------------- */
+    res.json(series);
+  } catch (err) {
+    console.error('getSalesCurrentMonth error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// controllers/analyticsController.js
+exports.getSalesByMonth = async (req, res) => {
+  try {
+    const { year, month } = req.query; // e.g. ?year=2025&month=11
+    if (!year || !month) return res.status(400).json({ error: "year and month required" });
+
+    const [rows] = await db.query(`
+      SELECT 
+        DATE(created_at) AS date,
+        COALESCE(SUM(gross_total), 0) AS total
+      FROM Orders
+      WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `, [year, month]);
+
+    const map = new Map(rows.map(r => [r.date.toISOString().slice(0,10), parseFloat(r.total) || 0]));
+
+    const first = new Date(year, month - 1, 1);
+    const last = new Date(year, month, 0);
+
+    const series = [];
+    for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
+      const iso = d.toISOString().slice(0,10);
+      series.push({ date: iso, total: map.get(iso) ?? 0 });
+    }
+
+    res.json(series);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getKpis = async (req, res) => {
   try {
     const [[{ todaySales }]] = await db.query(

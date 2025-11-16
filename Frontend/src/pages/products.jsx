@@ -51,8 +51,8 @@ const Products = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="p-6 border-b  border-[#E1F2F5]">
+        <div className="">
+        <div className="bg-white border border-[#3F75B0] rounded-lg shadow p-6 mb-6">
             
             <ProductFilters onFilterChange={handleFilterChange} />
           </div>

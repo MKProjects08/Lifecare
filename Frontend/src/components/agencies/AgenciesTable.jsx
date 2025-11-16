@@ -92,9 +92,14 @@ const AgenciesTable = () => {
   };
 
   const getStatusBadgeClass = (isActive) => {
-    return isActive !== false 
+    const active = isActive === 1 || isActive === '1' || isActive === true;
+    return active
       ? 'bg-green-100 text-green-800'
       : 'bg-red-100 text-red-800';
+  };
+  
+  const isAgencyActive = (isActive) => {
+    return isActive === 1 || isActive === '1' || isActive === true;
   };
 
   if (loading) {
@@ -213,9 +218,9 @@ const AgenciesTable = () => {
                     <p className="font-semibold text-blue-700">{formatCurrency(agency.target || 0)}</p>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(agency.is_active)}`}>
-                      {agency.is_active !== false ? 'Active' : 'Inactive'}
-                    </span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(agency.is_active)}`}>
+  {isAgencyActive(agency.is_active) ? 'Active' : 'Inactive'}
+</span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex">

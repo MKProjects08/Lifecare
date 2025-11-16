@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { productService } from "../../services/productService";
 import { agencyService } from "../../services/agencyService";
 import { Search, ChevronDown, X } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -395,12 +397,12 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
         `Product updated successfully!` : 
         'Product added successfully!';
       
-      alert(message);
+    toast.success(message);
       onSave(result);
       onClose();
     } catch (error) {
       console.error('Error saving product:', error);
-      alert(`Error saving product: ${error.message}`);
+      toast.errort(`Error saving product: ${error.message}`);
     } finally {
       setSaving(false);
     }

@@ -42,9 +42,9 @@ const Sales = () => {
       <SalesFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
       {/* Sales Table */}
-      <div className="bg-white rounded-lg shadow">
+     
         <SalesTable filters={filters} />
-      </div>
+    
     </div>
   );
 };

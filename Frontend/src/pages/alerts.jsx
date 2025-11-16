@@ -145,7 +145,7 @@ const Alerts = () => {
             <div>
               <p className="text-sm text-gray-600">Expiry Alerts</p>
               <p className="text-2xl font-bold text-gray-800">{summary.expiryAlertsCount}</p>
-              <p className="text-xs text-gray-500 mt-1">Within 60 days</p>
+              <p className="text-xs text-gray-500 mt-1">Within 90 days</p>
             </div>
             <div className="bg-orange-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

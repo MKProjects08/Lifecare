@@ -1,7 +1,6 @@
 // src/services/productService.ts
 
-const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3001/api';
-
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 // Auth token utility
 const getAuthToken = (): string | null => {
   return localStorage.getItem('token') || 
@@ -141,6 +140,7 @@ export const productService = {
     selling_price: string | number;
     expiry_date: string | null;
     Agency_ID: number;
+    is_active?: number;
   }): Promise<any> => {
     try {
       const token = getAuthToken();
@@ -157,7 +157,8 @@ export const productService = {
         purchase_price: parseFloat(productData.purchase_price.toString()).toFixed(2),
         selling_price: parseFloat(productData.selling_price.toString()).toFixed(2),
         expiry_date: productData.expiry_date,
-        Agency_ID: parseInt(productData.Agency_ID.toString())
+        Agency_ID: parseInt(productData.Agency_ID.toString()),
+        is_active: productData.is_active !== undefined ? productData.is_active : 1
       };
 
       const response = await fetch(`${API_BASE_URL}/products/${batchNumber}`, {

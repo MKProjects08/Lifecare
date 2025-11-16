@@ -50,7 +50,7 @@ export const alertService = {
 
       const today = new Date();
       const sixtyDaysFromNow = new Date();
-      sixtyDaysFromNow.setDate(today.getDate() + 60);
+      sixtyDaysFromNow.setDate(today.getDate() + 90);
 
       const expiryAlerts: ExpiryAlert[] = [];
 

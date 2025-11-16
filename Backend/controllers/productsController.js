@@ -77,13 +77,13 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID } = req.body;
+    const { productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID, is_active } = req.body;
     const sql = `
       UPDATE products 
-      SET productname=?, generic_name=?, quantity=?, purchase_price=?, selling_price=?, expiry_date=?, Agency_ID=? 
+      SET productname=?, generic_name=?, quantity=?, purchase_price=?, selling_price=?, expiry_date=?, Agency_ID=?, is_active=? 
       WHERE BatchNumber=?
     `;
-    const [result] = await db.query(sql, [productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID, id]);
+    const [result] = await db.query(sql, [productname, generic_name, quantity, purchase_price, selling_price, expiry_date, Agency_ID, is_active !== undefined ? is_active : 1, id]);
     if (result.affectedRows === 0) return res.status(404).json({ message: "Product not found" });
     res.json({ message: "Product updated successfully" });
   } catch (err) {

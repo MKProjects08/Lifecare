@@ -121,12 +121,26 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
   };
 
   const handleDateChange = (dateType, value) => {
-    onFiltersChange({
-      ...filters,
-      [dateType]: value
-    });
+    const newFilters = { ...filters };
+  
+    if (dateType === 'startDate') {
+      newFilters.startDate = value;
+  
+      // If the *existing* endDate becomes invalid → clear it
+      if (newFilters.endDate && value && newFilters.endDate <= value) {
+        newFilters.endDate = '';
+      }
+    } else if (dateType === 'endDate') {
+      // Block endDate ≤ startDate (only when startDate exists)
+      if (filters.startDate && value && value <= filters.startDate) {
+        return;               // ignore the illegal pick
+      }
+      newFilters.endDate = value;
+    }
+  
+    onFiltersChange(newFilters);
   };
-
+  
   const clearFilters = () => {
     onFiltersChange({
       customer: '',
@@ -218,7 +232,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
           <button
             type="button"
             onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] focus:border-[#3F75B0] bg-white text-left flex items-center justify-between"
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] focus:border-[#3F75B0] bg-white text-left flex items-center justify-between"
           >
             <span className="truncate text-sm">{getSelectedCustomerName()}</span>
             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
@@ -234,7 +248,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                     placeholder="Search customers..."
                     value={customerSearchTerm}
                     onChange={(e) => setCustomerSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+                    className="w-full pl-9 pr-8 py-2 border border-[#048dcc] rounded focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
                     onClick={(e) => e.stopPropagation()}
                   />
                   {customerSearchTerm && (
@@ -290,7 +304,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
           <button
             type="button"
             onClick={() => setIsAgencyDropdownOpen(!isAgencyDropdownOpen)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
           >
             <span className="truncate text-sm">{getSelectedAgencyName()}</span>
             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isAgencyDropdownOpen ? 'rotate-180' : ''}`} />
@@ -306,7 +320,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                     placeholder="Search agencies..."
                     value={agencySearchTerm}
                     onChange={(e) => setAgencySearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+                    className="w-full pl-9 pr-8 py-2 border border-[#048dcc] rounded focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
                     onClick={(e) => e.stopPropagation()}
                   />
                   {agencySearchTerm && (
@@ -362,7 +376,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
           <button
             type="button"
             onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
           >
             <span className="truncate text-sm">{getSelectedUserName()}</span>
             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
@@ -434,7 +448,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
           <button
             type="button"
             onClick={() => setIsPaymentStatusDropdownOpen(!isPaymentStatusDropdownOpen)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
           >
             <span className="truncate text-sm">{getSelectedPaymentStatusName()}</span>
             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isPaymentStatusDropdownOpen ? 'rotate-180' : ''}`} />
@@ -489,32 +503,44 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
         </div>
       </div>
 
-      {/* Date Range Filter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-            From Date
-          </label>
-          <input
-            type="date"
-            value={filters.startDate}
-            onChange={(e) => handleDateChange('startDate', e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
-          />
-        </div>
+     {/* Date Range Filter */}
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {/* ---- From Date ---- */}
+  <div>
+    <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+      From Date
+    </label>
+    <input
+      type="date"
+      value={filters.startDate}
+      onChange={(e) => handleDateChange('startDate', e.target.value)}
+      className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+    />
+  </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-            To Date
-          </label>
-          <input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) => handleDateChange('endDate', e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
-          />
-        </div>
-      </div>
+  {/* ---- To Date – SELECTABLE EVEN IF FROM DATE IS EMPTY ---- */}
+  <div>
+    <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+      To Date
+    </label>
+    <input
+      type="date"
+      value={filters.endDate}
+      /*  min = startDate + 1 day  (only when startDate exists) */
+      min={
+        filters.startDate
+          ? new Date(new Date(filters.startDate).getTime() + 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0]
+          : ''
+      }
+      onChange={(e) => handleDateChange('endDate', e.target.value)}
+      className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+      /*  NOT disabled any more  */
+    />
+  
+</div>
+</div>
     </div>
   );
 };

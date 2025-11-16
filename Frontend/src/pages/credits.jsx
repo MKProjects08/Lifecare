@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+// src/components/credit/Credit.jsx
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { customerService } from '../services/customerService';
+import { toast, ToastContainer } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const Credit = () => {
   const [customerBalances, setCustomerBalances] = useState([]);
@@ -8,6 +11,15 @@ const Credit = () => {
   const [totalCredits, setTotalCredits] = useState(0);
   const [withCreditsCount, setWithCreditsCount] = useState(0);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  /* -----------------------------------------------------------------
+     FETCH CUSTOMER BALANCES
+  ----------------------------------------------------------------- */
   useEffect(() => {
     loadCustomerBalances();
   }, []);
@@ -52,6 +64,92 @@ const Credit = () => {
     }
   };
 
+  // Reset page when rowsPerPage change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rowsPerPage]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* -----------------------------------------------------------------
+     DYNAMIC ROWS-PER-PAGE OPTIONS (4 options)
+  ----------------------------------------------------------------- */
+  const pageSizeOptions = useMemo(() => {
+    const total = customerBalances.length;
+    if (total === 0) return [10];
+
+    const options = new Set();
+    options.add(total);
+    let power = 1;
+    while (power <= total) {
+      options.add(power);
+      power *= 2;
+    }
+    [2, 3, 5, 10].forEach((divisor) => {
+      const val = Math.floor(total / divisor);
+      if (val >= 5 && val <= total) options.add(val);
+    });
+    const sorted = Array.from(options).sort((a, b) => a - b);
+    return sorted.slice(-4);
+  }, [customerBalances.length]);
+
+  /* -----------------------------------------------------------------
+     DEFAULT ROWS-PER-PAGE – largest when less than or equal to 10, allow any selection
+  ----------------------------------------------------------------- */
+  useEffect(() => {
+    const total = customerBalances.length;
+
+    if (total === 0) {
+      setRowsPerPage(10);
+      return;
+    }
+
+    const lastOption = pageSizeOptions[pageSizeOptions.length - 1];
+
+    // First render: if total less than or equal to 10 → default to largest
+    if (total <= 10 && rowsPerPage === 10) {
+      setRowsPerPage(lastOption);
+      return;
+    }
+
+    // Reset if current value is invalid
+    if (!pageSizeOptions.includes(rowsPerPage)) {
+      setRowsPerPage(pageSizeOptions[0] || 10);
+    }
+  }, [pageSizeOptions, rowsPerPage, customerBalances.length]);
+
+  /* -----------------------------------------------------------------
+     PAGINATION LOGIC
+  ----------------------------------------------------------------- */
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = customerBalances.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.max(1, Math.ceil(customerBalances.length / rowsPerPage));
+
+  const getPageNumbers = () => {
+    const pages = [];
+    pages.push(1);
+    if (currentPage > 3) pages.push(-1);
+    for (let i = Math.max(2, currentPage - 1); i < currentPage; i++) pages.push(i);
+    if (currentPage !== 1 && currentPage !== totalPages) pages.push(currentPage);
+    for (let i = currentPage + 1; i <= Math.min(totalPages - 1, currentPage + 2); i++) pages.push(i);
+    if (currentPage < totalPages - 2) pages.push(-1);
+    if (totalPages > 1 && pages[pages.length - 1] !== totalPages) pages.push(totalPages);
+    return Array.from(new Set(pages.filter(p => p > 0)));
+  };
+
+  /* -----------------------------------------------------------------
+     HELPERS
+  ----------------------------------------------------------------- */
   const formatCurrency = (amount) => {
     const n = typeof amount === 'string' ? parseFloat(amount) : amount;
     return isNaN(n) ? '0.00' : n.toFixed(2);
@@ -65,23 +163,29 @@ const Credit = () => {
     loadCustomerBalances();
   };
 
+  /* -----------------------------------------------------------------
+     RENDER – LOADING / ERROR
+  ----------------------------------------------------------------- */
   if (loading) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading customer credits...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !loading) {
     return (
       <div className="p-6">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <div className="flex justify-between items-center">
             <span>{error}</span>
-            <button 
+            <button
               onClick={handleRetry}
               className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
             >
@@ -93,6 +197,9 @@ const Credit = () => {
     );
   }
 
+  /* -----------------------------------------------------------------
+     MAIN RENDER
+  ----------------------------------------------------------------- */
   return (
     <div className="p-6">
       {/* Header */}
@@ -116,7 +223,7 @@ const Credit = () => {
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-gray-600">Total Customers with Credit</p>
+              <p className="text-sm text-gray-600">Total Customers</p>
               <p className="text-2xl font-bold text-gray-800">{customerBalances.length}</p>
             </div>
             <div className="bg-blue-100 p-3 rounded-full">
@@ -169,7 +276,7 @@ const Credit = () => {
               </tr>
             </thead>
             <tbody>
-              {customerBalances.length === 0 ? (
+              {currentRows.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="py-8 px-4 text-center text-gray-500">
                     <div className="flex flex-col items-center">
@@ -182,8 +289,8 @@ const Credit = () => {
                   </td>
                 </tr>
               ) : (
-                customerBalances.map((customer) => (
-                  <tr key={customer.customerId} className="border-b border-[#E1F2F5]  hover:bg-gray-50 text-left">
+                currentRows.map((customer) => (
+                  <tr key={customer.customerId} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
                     <td className="py-3 px-4">
                       <p className="font-medium text-gray-900">{customer.pharmacyName}</p>
                     </td>
@@ -205,19 +312,92 @@ const Credit = () => {
           </table>
         </div>
 
-        {/* Summary Footer */}
-        {customerBalances.length > 0 && (
-          <div className="border-t border-[#E1F2F5] bg-gray-50 px-4 py-3">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                Showing {customerBalances.length} customers and their credits
+        {/* Pagination Footer */}
+        <div className="border-t border-[#E1F2F5] bg-gray-50 px-4 py-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-700">Rows per page:</span>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-1 border border-gray-300 rounded px-3 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {rowsPerPage}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-300 rounded-md shadow-lg z-10">
+                    {pageSizeOptions.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => {
+                          setRowsPerPage(size);
+                          setDropdownOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm hover:bg-blue-100 transition-colors"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="text-sm font-semibold text-gray-800 bg-[#b8dae3] px-2.5 py-0.5 rounded-full">
-                Total Credits: <span className="text-red-600">{formatCurrency(totalCredits)}</span>
-              </div>
+
+             
+            </div>
+
+            <div className="text-sm font-semibold text-gray-700">
+              Total Customers: {customerBalances.length}
             </div>
           </div>
-        )}
+
+          {/* Pagination Buttons */}
+          <div className="mt-4 flex justify-center items-center space-x-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              Previous
+            </button>
+
+            {getPageNumbers().length > 0 ? (
+              getPageNumbers().map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    currentPage === num
+                      ? "bg-[#3F75B0] text-white"
+                      : "border border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  {num}
+                </button>
+              ))
+            ) : (
+              <button className="px-3 py-1 rounded text-sm font-medium bg-[#3F75B0] text-white">
+                1
+              </button>
+            )}
+
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              Next
+            </button>
+          </div>
+
+          <div className="mt-2 text-center text-sm text-gray-500">
+            Showing {indexOfFirstRow + 1}–{Math.min(indexOfLastRow, customerBalances.length)} of {customerBalances.length} customers
+          </div>
+        </div>
       </div>
 
       {/* Additional Info */}
@@ -235,6 +415,8 @@ const Credit = () => {
           </div>
         </div>
       )}
+
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };
