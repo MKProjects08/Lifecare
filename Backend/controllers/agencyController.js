@@ -3,7 +3,19 @@ const db = require('../config/db');
 // ===================== Get All Agencies =====================
 exports.getAgencies = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM agency");
+        const [rows] = await db.query(`
+            SELECT 
+              a.*, 
+              COALESCE((
+                SELECT SUM(o.gross_total)
+                FROM Orders o
+                WHERE o.Agency_ID = a.Agency_ID
+                  AND YEAR(o.created_at) = YEAR(CURDATE())
+                  AND MONTH(o.created_at) = MONTH(CURDATE())
+                  AND o.print_count > 0
+              ), 0) AS sales
+            FROM Agency a
+        `);
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });

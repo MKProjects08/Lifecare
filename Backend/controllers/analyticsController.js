@@ -139,6 +139,9 @@ exports.getKpis = async (req, res) => {
     const [[{ activeProducts }]] = await db.query(
       `SELECT COUNT(*) AS activeProducts FROM products WHERE is_active = 1`
     );
+    const [[{ totalInventoryValue }]] = await db.query(
+      `SELECT COALESCE(SUM(selling_price * quantity),0) AS totalInventoryValue FROM products WHERE is_active = 1`
+    );
 
     res.json({
       todaySales: parseFloat(todaySales) || 0,
@@ -147,6 +150,7 @@ exports.getKpis = async (req, res) => {
       pendingPayments: parseFloat(pendingPayments) || 0,
       ordersToday: parseInt(ordersToday) || 0,
       activeProducts: parseInt(activeProducts) || 0,
+      totalInventoryValue: parseFloat(totalInventoryValue) || 0,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
