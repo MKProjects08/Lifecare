@@ -130,10 +130,10 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
 
   const handleDateChange = (dateType, value) => {
     const newFilters = { ...localFilters };
-  
+
     if (dateType === 'startDate') {
       newFilters.startDate = value;
-  
+
       // If the *existing* endDate becomes invalid → clear it
       if (newFilters.endDate && value && newFilters.endDate <= value) {
         newFilters.endDate = '';
@@ -144,6 +144,17 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
         return;               // ignore the illegal pick
       }
       newFilters.endDate = value;
+    } else if (dateType === 'paidStartDate') {
+      newFilters.paidStartDate = value;
+
+      if (newFilters.paidEndDate && value && newFilters.paidEndDate <= value) {
+        newFilters.paidEndDate = '';
+      }
+    } else if (dateType === 'paidEndDate') {
+      if (localFilters.paidStartDate && value && value <= localFilters.paidStartDate) {
+        return;
+      }
+      newFilters.paidEndDate = value;
     }
   
     setLocalFilters(newFilters);
@@ -156,7 +167,9 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
       user: '',
       paymentStatus: 'all',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      paidStartDate: '',
+      paidEndDate: ''
     });
   };
 
@@ -546,7 +559,6 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
           <input
             type="date"
             value={localFilters.endDate}
-            /*  min = startDate + 1 day  (only when startDate exists) */
             min={
               localFilters.startDate
                 ? new Date(new Date(localFilters.startDate).getTime() + 24 * 60 * 60 * 1000)
@@ -555,6 +567,39 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                 : ''
             }
             onChange={(e) => handleDateChange('endDate', e.target.value)}
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+            Paid From Date
+          </label>
+          <input
+            type="date"
+            value={localFilters.paidStartDate}
+            onChange={(e) => handleDateChange('paidStartDate', e.target.value)}
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+            Paid To Date
+          </label>
+          <input
+            type="date"
+            value={localFilters.paidEndDate}
+            min={
+              localFilters.paidStartDate
+                ? new Date(new Date(localFilters.paidStartDate).getTime() + 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0]
+                : ''
+            }
+            onChange={(e) => handleDateChange('paidEndDate', e.target.value)}
             className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
           />
         </div>

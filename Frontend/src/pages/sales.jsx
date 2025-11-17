@@ -9,7 +9,9 @@ const Sales = () => {
     user: '',
     paymentStatus: 'all',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    paidStartDate: '',
+    paidEndDate: ''
   });
 
   const handleFiltersChange = (newFilters) => {

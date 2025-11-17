@@ -8,7 +8,14 @@ const Orders = () => {
     paid: 0,
     pending: 0
   });
+  const [customerOptions, setCustomerOptions] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    orderId: '',
+    customerName: '',
+    printStatus: '', // '', 'printed', 'notPrinted'
+  });
 
   useEffect(() => {
     loadStats();
@@ -29,6 +36,16 @@ const Orders = () => {
         paid: paidOrders,
         pending: pendingOrders
       });
+
+      const uniqueCustomers = Array.from(
+        new Set(
+          orders
+            .map(order => order.CustomerName)
+            .filter(name => typeof name === 'string' && name.trim() !== '')
+        )
+      ).sort((a, b) => a.localeCompare(b));
+
+      setCustomerOptions(uniqueCustomers);
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
@@ -38,6 +55,10 @@ const Orders = () => {
 
   const refreshOrders = () => {
     window.location.reload(); // Simple refresh for now
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -105,10 +126,51 @@ const Orders = () => {
         </div>
       )}
 
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">Order ID</label>
+          <input
+            type="text"
+            value={filters.orderId}
+            onChange={(e) => handleFilterChange('orderId', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+            placeholder="Search by Order ID..."
+          />
+        </div>
+
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">Customer</label>
+          <select
+            value={filters.customerName}
+            onChange={(e) => handleFilterChange('customerName', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white"
+          >
+            <option value="">All Customers</option>
+            {customerOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">Print Status</label>
+          <select
+            value={filters.printStatus}
+            onChange={(e) => handleFilterChange('printStatus', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white"
+          >
+            <option value="">All</option>
+            <option value="notPrinted">Not Printed</option>
+            <option value="printed">Printed</option>
+          </select>
+        </div>
+      </div>
+
       {/* Orders Table */}
-      
-        <OrdersTable />
-    
+      <OrdersTable filters={filters} />
     </div>
   );
 };

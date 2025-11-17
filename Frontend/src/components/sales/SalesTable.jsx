@@ -1,6 +1,7 @@
 // src/components/sales/SalesTable.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { orderService } from '../../services/orderService';
+import OrderDetailsPopup from '../orders/OrderDetailsPopup';
 import { toast, ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
@@ -8,6 +9,11 @@ const SalesTable = ({ filters = {} }) => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [loadingOrderId, setLoadingOrderId] = useState(null);
+  const [paymentEditOrderId, setPaymentEditOrderId] = useState(null);
+  const [paymentEditDate, setPaymentEditDate] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,6 +80,18 @@ const SalesTable = ({ filters = {} }) => {
         if (startDate && saleDate < startDate) return false;
         if (endDate && saleDate > endDate) return false;
       }
+
+      if (filters.paidStartDate || filters.paidEndDate) {
+        const paidDateValue = sale.paid_date;
+        if (!paidDateValue) return false;
+
+        const paidDate = new Date(paidDateValue);
+        const paidStart = filters.paidStartDate ? new Date(filters.paidStartDate) : null;
+        const paidEnd = filters.paidEndDate ? new Date(filters.paidEndDate) : null;
+
+        if (paidStart && paidDate < paidStart) return false;
+        if (paidEnd && paidDate > paidEnd) return false;
+      }
       return true;
     });
   }, [sales, filters]);
@@ -84,15 +102,13 @@ const SalesTable = ({ filters = {} }) => {
   const widgetTotals = useMemo(() => {
     return filteredSales.reduce((acc, sale) => {
       const grossTotal = parseFloat(sale.gross_total) || 0;
-      const netTotal = parseFloat(sale.net_total) || 0;
       const discount = parseFloat(sale.discount_amount) || 0;
       return {
         grossTotal: acc.grossTotal + grossTotal,
-        netTotal: acc.netTotal + netTotal,
         discount: acc.discount + discount,
         count: acc.count + 1
       };
-    }, { grossTotal: 0, netTotal: 0, discount: 0, count: 0 });
+    }, { grossTotal: 0, discount: 0, count: 0 });
   }, [filteredSales]);
 
   /* -----------------------------------------------------------------
@@ -153,10 +169,9 @@ const SalesTable = ({ filters = {} }) => {
   const totals = widgetTotals;
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    const num = Number(amount);
+    if (isNaN(num)) return '0.00';
+    return num.toFixed(2);
   };
 
   const formatDate = (dateString) => {
@@ -166,6 +181,61 @@ const SalesTable = ({ filters = {} }) => {
 
   const handleRetry = () => {
     loadSales();
+  };
+
+  const handleViewOrder = async (orderId) => {
+    try {
+      setLoadingOrderId(orderId);
+      setError('');
+      const orderDetails = await orderService.getOrderById(orderId);
+      setSelectedOrder(orderDetails);
+      setShowPopup(true);
+    } catch (err) {
+      setError('Failed to load order details: ' + err.message);
+      console.error('Error loading order details:', err);
+    } finally {
+      setLoadingOrderId(null);
+    }
+  };
+
+  const handleOpenPaidEditor = (sale) => {
+    const oid = sale.Order_ID || sale.id;
+    if (!oid) return;
+
+    // Default date: today in YYYY-MM-DD
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+
+    setPaymentEditOrderId(oid);
+    setPaymentEditDate(`${y}-${m}-${d}`);
+  };
+
+  const handleConfirmMarkAsPaid = async (sale) => {
+    const oid = sale.Order_ID || sale.id;
+    if (!oid) return;
+
+    if (!paymentEditDate) {
+      toast.error('Please select a paid date.');
+      return;
+    }
+
+    try {
+      await orderService.updateOrderPaymentStatus(oid, 'paid', paymentEditDate);
+      toast.success('Payment status updated to paid');
+      setPaymentEditOrderId(null);
+      setPaymentEditDate('');
+      loadSales();
+    } catch (err) {
+      console.error('Error updating payment status:', err);
+      toast.error('Failed to update payment status: ' + err.message);
+    }
+  };
+
+  const handleCancelMarkAsPaid = () => {
+    setPaymentEditOrderId(null);
+    setPaymentEditDate('');
   };
 
   /* -----------------------------------------------------------------
@@ -221,7 +291,7 @@ const SalesTable = ({ filters = {} }) => {
         {/* Totals Section */}
         {filteredSales.length > 0 && (
           <div className="mt-4 bg-gray-50 rounded-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-4 rounded-lg shadow-sm border-l-4">
                 <p className="text-sm text-gray-600">Total Orders</p>
                 <p className="text-2xl font-bold text-gray-800">{totals.count}</p>
@@ -233,10 +303,6 @@ const SalesTable = ({ filters = {} }) => {
               <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-600">
                 <p className="text-sm text-gray-600">Total Discount</p>
                 <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.discount)}</p>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-600">
-                <p className="text-sm text-gray-600">Total Net</p>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.netTotal)}</p>
               </div>
             </div>
           </div>
@@ -254,13 +320,14 @@ const SalesTable = ({ filters = {} }) => {
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Order Date</th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Payment Status</th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700">Gross Total</th>
-                <th className="py-3 px-4 text-left font-semibold text-gray-700">Net Total</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Paid Date</th>
               </tr>
             </thead>
             <tbody>
               {currentRows.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-4 px-4 text-center text-gray-500">
+                  <td colSpan="9" className="py-4 px-4 text-center text-gray-500">
                     {sales.length === 0 ? "No sales records found" : "No sales match your filters"}
                   </td>
                 </tr>
@@ -288,8 +355,66 @@ const SalesTable = ({ filters = {} }) => {
                     <td className="py-3 px-4 font-semibold">
                       {formatCurrency(parseFloat(sale.gross_total) || 0)}
                     </td>
-                    <td className="py-3 px-4 font-semibold">
-                      {formatCurrency(parseFloat(sale.net_total) || 0)}
+                    <td className="py-3 px-4">
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewOrder(sale.Order_ID || sale.id)}
+                            disabled={loadingOrderId === (sale.Order_ID || sale.id)}
+                            className="flex items-center px-3 py-1 text-sm disabled:cursor-not-allowed"
+                            title="View Order Details"
+                          >
+                            {loadingOrderId === (sale.Order_ID || sale.id) ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                Loading...
+                              </>
+                            ) : (
+                              <svg className="w-5 h-5 mr-1" fill="none" stroke="#3F75B0" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            )}
+                          </button>
+                          {sale.paymentstatus === 'pending' && (
+                            <button
+                              onClick={() => handleOpenPaidEditor(sale)}
+                              className="flex items-center px-3 py-1 rounded text-sm bg-green-600 text-white hover:bg-green-700"
+                              title="Mark as Paid"
+                            >
+                              Mark Paid
+                            </button>
+                          )}
+                        </div>
+
+                        {sale.paymentstatus === 'pending' && paymentEditOrderId === (sale.Order_ID || sale.id) && (
+                          <div className="flex items-center space-x-2 text-sm">
+                            <input
+                              type="date"
+                              value={paymentEditDate}
+                              onChange={(e) => setPaymentEditDate(e.target.value)}
+                              className="border border-gray-300 rounded px-2 py-1"
+                            />
+                            <button
+                              onClick={() => handleConfirmMarkAsPaid(sale)}
+                              className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={handleCancelMarkAsPaid}
+                              className="px-3 py-1 rounded bg-gray-300 text-gray-800 hover:bg-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      {sale.paymentstatus === 'paid' && sale.paid_date
+                        ? formatDate(sale.paid_date)
+                        : '-'}
                     </td>
                   </tr>
                 ))
@@ -332,7 +457,6 @@ const SalesTable = ({ filters = {} }) => {
               )}
             </div>
 
-           
           </div>
 
           <div className="text-sm font-semibold text-gray-700">
@@ -388,6 +512,16 @@ const SalesTable = ({ filters = {} }) => {
         <ToastContainer position="top-right" autoClose={3000} />
       </div>
 
+      {showPopup && (
+        <OrderDetailsPopup
+          order={selectedOrder}
+          onClose={() => {
+            setShowPopup(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
       {/* PRINT VIEW (only when printing) */}
       <div className="hidden print:block">
         <h2 className="text-2xl font-bold mb-2">Sales Report</h2>
@@ -407,7 +541,6 @@ const SalesTable = ({ filters = {} }) => {
                 <th className="border border-gray-400 px-2 py-1 text-left">Payment</th>
                 <th className="border border-gray-400 px-2 py-1 text-right">Gross</th>
                 <th className="border border-gray-400 px-2 py-1 text-right">Discount</th>
-                <th className="border border-gray-400 px-2 py-1 text-right">Net</th>
               </tr>
             </thead>
             <tbody>
@@ -426,9 +559,6 @@ const SalesTable = ({ filters = {} }) => {
                   </td>
                   <td className="border border-gray-400 px-2 py-1 text-right">
                     {formatCurrency(parseFloat(sale.discount_amount) || 0)}
-                  </td>
-                  <td className="border border-gray-400 px-2 py-1 text-right">
-                    {formatCurrency(parseFloat(sale.net_total) || 0)}
                   </td>
                 </tr>
               ))}

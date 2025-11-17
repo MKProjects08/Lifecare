@@ -16,7 +16,7 @@ const OrdersTable = ({ filters = {} }) => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -43,7 +43,7 @@ const OrdersTable = ({ filters = {} }) => {
     }
   };
 
-  // Reset page when filters or rowsPerPage change
+  // Reset page when filters or page size change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, rowsPerPage]);
@@ -101,91 +101,63 @@ const OrdersTable = ({ filters = {} }) => {
   ----------------------------------------------------------------- */
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
+      const orderIdText = String(
+        order.FormattedOrderID || order.Order_ID || order.id || ''
+      ).toLowerCase();
+
+      const matchesOrderId =
+        !filters.orderId ||
+        orderIdText.includes(String(filters.orderId).toLowerCase());
+
       const matchesCustomer =
         !filters.customerName ||
         (order.CustomerName &&
-          order.CustomerName.toLowerCase().includes(filters.customerName.toLowerCase()));
+          order.CustomerName.toLowerCase() === filters.customerName.toLowerCase());
 
+      // Keep support for potential agency / payment status filters (not used on this page now)
       const matchesAgency =
         !filters.agencyName ||
         (order.AgencyName &&
           order.AgencyName.toLowerCase().includes(filters.agencyName.toLowerCase()));
 
-      const matchesStatus =
+      const matchesPaymentStatus =
         !filters.paymentStatus ||
         order.paymentstatus === filters.paymentStatus;
 
-      return matchesCustomer && matchesAgency && matchesStatus;
+      const printCount = order.print_count || 0;
+      const matchesPrintStatus =
+        !filters.printStatus ||
+        (filters.printStatus === 'printed' && printCount > 0) ||
+        (filters.printStatus === 'notPrinted' && printCount === 0);
+
+      return (
+        matchesOrderId &&
+        matchesCustomer &&
+        matchesAgency &&
+        matchesPaymentStatus &&
+        matchesPrintStatus
+      );
     });
   }, [orders, filters]);
 
-  /* -----------------------------------------------------------------
-     DYNAMIC ROWS-PER-PAGE OPTIONS (4 options)
-  ----------------------------------------------------------------- */
-  const pageSizeOptions = useMemo(() => {
-    const total = filteredOrders.length;
-    if (total === 0) return [10];
-
-    const options = new Set();
-    options.add(total);
-    let power = 1;
-    while (power <= total) {
-      options.add(power);
-      power *= 2;
-    }
-    [2, 3, 5, 10].forEach((divisor) => {
-      const val = Math.floor(total / divisor);
-      if (val >= 5 && val <= total) options.add(val);
+  // Always show latest orders first (highest ID first)
+  const sortedOrders = useMemo(() => {
+    return [...filteredOrders].sort((a, b) => {
+      const aId = a.Order_ID || a.id || 0;
+      const bId = b.Order_ID || b.id || 0;
+      return bId - aId;
     });
-    const sorted = Array.from(options).sort((a, b) => a - b);
-    return sorted.slice(-4);
-  }, [filteredOrders.length]);
-
-  /* -----------------------------------------------------------------
-     DEFAULT ROWS-PER-PAGE – keep largest as default when ≤10,
-     but **allow any selection**
-  ----------------------------------------------------------------- */
-  useEffect(() => {
-    const total = filteredOrders.length;
-
-    if (total === 0) {
-      setRowsPerPage(10);
-      return;
-    }
-
-    const lastOption = pageSizeOptions[pageSizeOptions.length - 1];
-
-    // First render only: if total ≤10 → default to largest option
-    if (total <= 10 && rowsPerPage === 10) {
-      setRowsPerPage(lastOption);
-      return;
-    }
-
-    // If current rowsPerPage is no longer valid → reset to first option
-    if (!pageSizeOptions.includes(rowsPerPage)) {
-      setRowsPerPage(pageSizeOptions[0] || 10);
-    }
-  }, [pageSizeOptions, rowsPerPage, filteredOrders.length]);
+  }, [filteredOrders]);
 
   /* -----------------------------------------------------------------
      PAGINATION LOGIC
   ----------------------------------------------------------------- */
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = filteredOrders.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / rowsPerPage));
+  const currentRows = sortedOrders.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.max(1, Math.ceil(sortedOrders.length / rowsPerPage));
 
-  const getPageNumbers = () => {
-    const pages = [];
-    pages.push(1);
-    if (currentPage > 3) pages.push(-1);
-    for (let i = Math.max(2, currentPage - 1); i < currentPage; i++) pages.push(i);
-    if (currentPage !== 1 && currentPage !== totalPages) pages.push(currentPage);
-    for (let i = currentPage + 1; i <= Math.min(totalPages - 1, currentPage + 2); i++) pages.push(i);
-    if (currentPage < totalPages - 2) pages.push(-1);
-    if (totalPages > 1 && pages[pages.length - 1] !== totalPages) pages.push(totalPages);
-    return Array.from(new Set(pages.filter(p => p > 0)));
-  };
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   /* -----------------------------------------------------------------
      RENDER – LOADING / ERROR
@@ -328,41 +300,11 @@ const OrdersTable = ({ filters = {} }) => {
       <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-700">Rows per page:</span>
-
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1 border border-gray-300 rounded px-3 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {rowsPerPage}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                {pageSizeOptions.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => {
-                      setRowsPerPage(size);
-                      setDropdownOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm hover:bg-blue-100 transition-colors"
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-       
+          <span className="text-gray-700">{rowsPerPage}</span>
         </div>
 
         <div className="text-sm font-semibold text-gray-700">
-          Total Orders: {filteredOrders.length}
+          Total Orders: {sortedOrders.length}
         </div>
       </div>
 
@@ -377,8 +319,8 @@ const OrdersTable = ({ filters = {} }) => {
             Previous
           </button>
 
-          {getPageNumbers().length > 0 ? (
-            getPageNumbers().map((num) => (
+          {pageNumbers.length > 0 ? (
+            pageNumbers.map((num) => (
               <button
                 key={num}
                 onClick={() => setCurrentPage(num)}
@@ -407,7 +349,7 @@ const OrdersTable = ({ filters = {} }) => {
         </div>
 
         <div className="text-sm text-gray-500">
-          Showing {indexOfFirstRow + 1}–{Math.min(indexOfLastRow, filteredOrders.length)} of {filteredOrders.length} orders
+          Showing {indexOfFirstRow + 1}–{Math.min(indexOfLastRow, sortedOrders.length)} of {sortedOrders.length} orders
         </div>
       </div>
 
