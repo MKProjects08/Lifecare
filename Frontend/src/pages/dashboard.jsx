@@ -176,12 +176,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Active Products */}
+            {/* Total Inventory Value */}
             <div className="bg-white p-4 rounded-lg shadow border-l-4 border-[#3F75B0]">
               <div className="flex justify-between items-center">
                 <div>
-                  <div className="text-xs uppercase tracking-wide text-[#3F75B0]">Active Products</div>
-                  <div className="text-2xl font-bold text-gray-800">{kpis?.activeProducts || 0}</div>
+                  <div className="text-xs uppercase tracking-wide text-[#3F75B0]">Total Inventory Value</div>
+                  <div className="text-2xl font-bold text-gray-800">{number2(kpis?.totalInventoryValue)}</div>
                 </div>
                 <div className="bg-[#E1F2F5] p-3 rounded-full">
                   <svg className="w-5 h-5 text-[#3F75B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

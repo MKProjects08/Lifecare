@@ -11,7 +11,7 @@ const SalesTable = ({ filters = {} }) => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -62,6 +62,9 @@ const SalesTable = ({ filters = {} }) => {
       if (filters.user && sale.User_ID != filters.user) return false;
       if (filters.paymentStatus !== 'all' && sale.paymentstatus !== filters.paymentStatus) return false;
 
+      // Only include orders that have been printed at least once
+      if (!sale.print_count || sale.print_count <= 0) return false;
+
       if (filters.startDate || filters.endDate) {
         const orderDate = sale.created_at || sale.paid_date;
         if (!orderDate) return false;
@@ -76,49 +79,51 @@ const SalesTable = ({ filters = {} }) => {
   }, [sales, filters]);
 
   /* -----------------------------------------------------------------
-     DYNAMIC ROWS-PER-PAGE OPTIONS (4 options)
+     TOTALS FOR WIDGETS (ALL FILTERED SALES, ALL PAGES)
   ----------------------------------------------------------------- */
-  const pageSizeOptions = useMemo(() => {
-    const total = filteredSales.length;
-    if (total === 0) return [10];
-
-    const options = new Set();
-    options.add(total);
-    let power = 1;
-    while (power <= total) {
-      options.add(power);
-      power *= 2;
-    }
-    [2, 3, 5, 10].forEach((divisor) => {
-      const val = Math.floor(total / divisor);
-      if (val >= 5 && val <= total) options.add(val);
-    });
-    const sorted = Array.from(options).sort((a, b) => a - b);
-    return sorted.slice(-4);
-  }, [filteredSales.length]);
+  const widgetTotals = useMemo(() => {
+    return filteredSales.reduce((acc, sale) => {
+      const grossTotal = parseFloat(sale.gross_total) || 0;
+      const netTotal = parseFloat(sale.net_total) || 0;
+      const discount = parseFloat(sale.discount_amount) || 0;
+      return {
+        grossTotal: acc.grossTotal + grossTotal,
+        netTotal: acc.netTotal + netTotal,
+        discount: acc.discount + discount,
+        count: acc.count + 1
+      };
+    }, { grossTotal: 0, netTotal: 0, discount: 0, count: 0 });
+  }, [filteredSales]);
 
   /* -----------------------------------------------------------------
-     DEFAULT ROWS-PER-PAGE – largest when ≤10, allow any selection
+     ROWS-PER-PAGE OPTIONS (LOCKED TO 15)
+  ----------------------------------------------------------------- */
+  const pageSizeOptions = useMemo(() => {
+    return [15];
+  }, []);
+
+  /* -----------------------------------------------------------------
+     DEFAULT ROWS-PER-PAGE – largest when ≤15, allow any selection
   ----------------------------------------------------------------- */
   useEffect(() => {
     const total = filteredSales.length;
 
     if (total === 0) {
-      setRowsPerPage(10);
+      setRowsPerPage(15);
       return;
     }
 
     const lastOption = pageSizeOptions[pageSizeOptions.length - 1];
 
-    // First render: if total ≤10 → default to largest
-    if (total <= 10 && rowsPerPage === 10) {
+    // First render: if total ≤15 → default to largest
+    if (total <= 15 && rowsPerPage === 15) {
       setRowsPerPage(lastOption);
       return;
     }
 
     // Reset if current value is invalid
     if (!pageSizeOptions.includes(rowsPerPage)) {
-      setRowsPerPage(pageSizeOptions[0] || 10);
+      setRowsPerPage(pageSizeOptions[0] || 15);
     }
   }, [pageSizeOptions, rowsPerPage, filteredSales.length]);
 
@@ -143,19 +148,9 @@ const SalesTable = ({ filters = {} }) => {
   };
 
   /* -----------------------------------------------------------------
-     CALCULATIONS
+     CALCULATIONS (WIDGET TOTALS BASED ON FILTERED SALES)
   ----------------------------------------------------------------- */
-  const totals = currentRows.reduce((acc, sale) => {
-    const grossTotal = parseFloat(sale.gross_total) || 0;
-    const netTotal = parseFloat(sale.net_total) || 0;
-    const discount = parseFloat(sale.discount_amount) || 0;
-    return {
-      grossTotal: acc.grossTotal + grossTotal,
-      netTotal: acc.netTotal + netTotal,
-      discount: acc.discount + discount,
-      count: acc.count + 1
-    };
-  }, { grossTotal: 0, netTotal: 0, discount: 0, count: 0 });
+  const totals = widgetTotals;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -208,187 +203,239 @@ const SalesTable = ({ filters = {} }) => {
   ----------------------------------------------------------------- */
   return (
     <>
-      {/* Error Alert */}
-      {error && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-          {error}
-          <button
-            onClick={() => setError('')}
-            className="ml-4 bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700 text-sm"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* SCREEN VIEW (hidden when printing) */}
+      <div className="print:hidden">
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+            {error}
+            <button
+              onClick={() => setError('')}
+              className="ml-4 bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700 text-sm"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
-      {/* Totals Section */}
-      {filteredSales.length > 0 && (
-        <div className="mt-4 bg-gray-50 rounded-lg p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4">
-              <p className="text-sm text-gray-600">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-800">{totals.count}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-600">
-              <p className="text-sm text-gray-600">Gross Total</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.grossTotal)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-600">
-              <p className="text-sm text-gray-600">Total Discount</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.discount)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-600">
-              <p className="text-sm text-gray-600">Net Total</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.netTotal)}</p>
+        {/* Totals Section */}
+        {filteredSales.length > 0 && (
+          <div className="mt-4 bg-gray-50 rounded-lg p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4">
+                <p className="text-sm text-gray-600">Total Orders</p>
+                <p className="text-2xl font-bold text-gray-800">{totals.count}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-600">
+                <p className="text-sm text-gray-600">Total Gross</p>
+                <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.grossTotal)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-600">
+                <p className="text-sm text-gray-600">Total Discount</p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.discount)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-600">
+                <p className="text-sm text-gray-600">Total Net</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.netTotal)}</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Table */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full table-auto">
-          <thead>
-            <tr className="bg-[#E1F2F5]">
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Order ID</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Customer</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Agency</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">User</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Order Date</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Payment Status</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Gross Total</th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-700">Net Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentRows.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="py-4 px-4 text-center text-gray-500">
-                  {sales.length === 0 ? "No sales records found" : "No sales match your filters"}
-                </td>
+        {/* Table */}
+        <div className="overflow-x-auto bg-white rounded-lg shadow">
+          <table className="min-w-full table-auto">
+            <thead>
+              <tr className="bg-[#E1F2F5]">
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Order ID</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Customer</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Agency</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">User</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Order Date</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Payment Status</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Gross Total</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700">Net Total</th>
               </tr>
+            </thead>
+            <tbody>
+              {currentRows.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-4 px-4 text-center text-gray-500">
+                    {sales.length === 0 ? "No sales records found" : "No sales match your filters"}
+                  </td>
+                </tr>
+              ) : (
+                currentRows.map((sale) => (
+                  <tr key={sale.Order_ID || sale.id} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-blue-600">
+                        {sale.FormattedOrderID || `ORD-${sale.Order_ID || sale.id}`}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">{sale.CustomerName || 'N/A'}</td>
+                    <td className="py-3 px-4">{sale.AgencyName || 'N/A'}</td>
+                    <td className="py-3 px-4">{sale.UserName || 'N/A'}</td>
+                    <td className="py-3 px-4">{formatDate(sale.created_at)}</td>
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        sale.paymentstatus === 'paid' ? 'bg-green-100 text-green-800' :
+                        sale.paymentstatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {sale.paymentstatus || 'unknown'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-semibold">
+                      {formatCurrency(parseFloat(sale.gross_total) || 0)}
+                    </td>
+                    <td className="py-3 px-4 font-semibold">
+                      {formatCurrency(parseFloat(sale.net_total) || 0)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer: Dropdown + Showing + Total */}
+        <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-700">Rows per page:</span>
+
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-1 border border-gray-300 rounded px-3 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {rowsPerPage}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-300 rounded-md shadow-lg z-10">
+                  {pageSizeOptions.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => {
+                        setRowsPerPage(size);
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+           
+          </div>
+
+          <div className="text-sm font-semibold text-gray-700">
+            Total Sales: {filteredSales.length}
+          </div>
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="flex justify-center items-center space-x-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              Previous
+            </button>
+
+            {getPageNumbers().length > 0 ? (
+              getPageNumbers().map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={`px-3 py-1 rounded text-sm font-medium ${
+                    currentPage === num
+                      ? "bg-[#3F75B0] text-white"
+                      : "border border-gray-300 hover:bg-gray-100"
+                  }`}
+                >
+                  {num}
+                </button>
+              ))
             ) : (
-              currentRows.map((sale) => (
-                <tr key={sale.Order_ID || sale.id} className="border-b border-[#E1F2F5] hover:bg-gray-50 text-left">
-                  <td className="py-3 px-4">
-                    <span className="font-mono text-blue-600">
-                      {sale.FormattedOrderID || `ORD-${sale.Order_ID || sale.id}`}
-                    </span>
+              <button className="px-3 py-1 rounded text-sm font-medium bg-[#3F75B0] text-white">
+                1
+              </button>
+            )}
+
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              Next
+            </button>
+          </div>
+
+          <div className="text-sm text-gray-500">
+            Showing {indexOfFirstRow + 1}–{Math.min(indexOfLastRow, filteredSales.length)} of {filteredSales.length} sales records
+          </div>
+        </div>
+
+        <ToastContainer position="top-right" autoClose={3000} />
+      </div>
+
+      {/* PRINT VIEW (only when printing) */}
+      <div className="hidden print:block">
+        <h2 className="text-2xl font-bold mb-2">Sales Report</h2>
+        <p className="mb-4 text-sm">Printed on {new Date().toLocaleString()}</p>
+
+        {filteredSales.length === 0 ? (
+          <p className="text-sm text-gray-700">No sales match your filters.</p>
+        ) : (
+          <table className="min-w-full table-auto text-xs border-collapse border border-gray-400">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-400 px-2 py-1 text-left">Order ID</th>
+                <th className="border border-gray-400 px-2 py-1 text-left">Customer</th>
+                <th className="border border-gray-400 px-2 py-1 text-left">Agency</th>
+                <th className="border border-gray-400 px-2 py-1 text-left">User</th>
+                <th className="border border-gray-400 px-2 py-1 text-left">Order Date</th>
+                <th className="border border-gray-400 px-2 py-1 text-left">Payment</th>
+                <th className="border border-gray-400 px-2 py-1 text-right">Gross</th>
+                <th className="border border-gray-400 px-2 py-1 text-right">Discount</th>
+                <th className="border border-gray-400 px-2 py-1 text-right">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSales.map((sale) => (
+                <tr key={sale.Order_ID || sale.id}>
+                  <td className="border border-gray-400 px-2 py-1">
+                    {sale.FormattedOrderID || `ORD-${sale.Order_ID || sale.id}`}
                   </td>
-                  <td className="py-3 px-4">{sale.CustomerName || 'N/A'}</td>
-                  <td className="py-3 px-4">{sale.AgencyName || 'N/A'}</td>
-                  <td className="py-3 px-4">{sale.UserName || 'N/A'}</td>
-                  <td className="py-3 px-4">{formatDate(sale.created_at)}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      sale.paymentstatus === 'paid' ? 'bg-green-100 text-green-800' :
-                      sale.paymentstatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {sale.paymentstatus || 'unknown'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 font-semibold">
+                  <td className="border border-gray-400 px-2 py-1">{sale.CustomerName || 'N/A'}</td>
+                  <td className="border border-gray-400 px-2 py-1">{sale.AgencyName || 'N/A'}</td>
+                  <td className="border border-gray-400 px-2 py-1">{sale.UserName || 'N/A'}</td>
+                  <td className="border border-gray-400 px-2 py-1">{formatDate(sale.created_at)}</td>
+                  <td className="border border-gray-400 px-2 py-1">{sale.paymentstatus || 'unknown'}</td>
+                  <td className="border border-gray-400 px-2 py-1 text-right">
                     {formatCurrency(parseFloat(sale.gross_total) || 0)}
                   </td>
-                  <td className="py-3 px-4 font-semibold">
+                  <td className="border border-gray-400 px-2 py-1 text-right">
+                    {formatCurrency(parseFloat(sale.discount_amount) || 0)}
+                  </td>
+                  <td className="border border-gray-400 px-2 py-1 text-right">
                     {formatCurrency(parseFloat(sale.net_total) || 0)}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-
-      {/* Footer: Dropdown + Showing + Total */}
-      <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-700">Rows per page:</span>
-
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1 border border-gray-300 rounded px-3 py-1 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {rowsPerPage}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                {pageSizeOptions.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => {
-                      setRowsPerPage(size);
-                      setDropdownOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm hover:bg-blue-100 transition-colors"
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-         
-        </div>
-
-        <div className="text-sm font-semibold text-gray-700">
-          Total Sales: {filteredSales.length}
-        </div>
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-4 flex flex-col items-center gap-2">
-        <div className="flex justify-center items-center space-x-1">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-          >
-            Previous
-          </button>
-
-          {getPageNumbers().length > 0 ? (
-            getPageNumbers().map((num) => (
-              <button
-                key={num}
-                onClick={() => setCurrentPage(num)}
-                className={`px-3 py-1 rounded text-sm font-medium ${
-                  currentPage === num
-                    ? "bg-[#3F75B0] text-white"
-                    : "border border-gray-300 hover:bg-gray-100"
-                }`}
-              >
-                {num}
-              </button>
-            ))
-          ) : (
-            <button className="px-3 py-1 rounded text-sm font-medium bg-[#3F75B0] text-white">
-              1
-            </button>
-          )}
-
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-          >
-            Next
-          </button>
-        </div>
-
-        <div className="text-sm text-gray-500">
-          Showing {indexOfFirstRow + 1}–{Math.min(indexOfLastRow, filteredSales.length)} of {filteredSales.length} sales records
-        </div>
-      </div>
-
-      <ToastContainer position="top-right" autoClose={3000} />
     </>
   );
 };

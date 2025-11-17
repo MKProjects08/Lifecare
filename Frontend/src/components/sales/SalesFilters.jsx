@@ -11,6 +11,14 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Local draft filters – applied only when the user clicks "Apply Filter"
+  const [localFilters, setLocalFilters] = useState(filters);
+
+  // Keep local filters in sync if parent filters change externally
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
   // Dropdown states
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const [isAgencyDropdownOpen, setIsAgencyDropdownOpen] = useState(false);
@@ -90,10 +98,10 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
   };
 
   const handleFilterChange = (filterName, value) => {
-    onFiltersChange({
-      ...filters,
+    setLocalFilters(prev => ({
+      ...prev,
       [filterName]: value
-    });
+    }));
   };
 
   const handleCustomerSelect = (value) => {
@@ -121,7 +129,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
   };
 
   const handleDateChange = (dateType, value) => {
-    const newFilters = { ...filters };
+    const newFilters = { ...localFilters };
   
     if (dateType === 'startDate') {
       newFilters.startDate = value;
@@ -132,17 +140,17 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
       }
     } else if (dateType === 'endDate') {
       // Block endDate ≤ startDate (only when startDate exists)
-      if (filters.startDate && value && value <= filters.startDate) {
+      if (localFilters.startDate && value && value <= localFilters.startDate) {
         return;               // ignore the illegal pick
       }
       newFilters.endDate = value;
     }
   
-    onFiltersChange(newFilters);
+    setLocalFilters(newFilters);
   };
   
   const clearFilters = () => {
-    onFiltersChange({
+    setLocalFilters({
       customer: '',
       agency: '',
       user: '',
@@ -150,6 +158,10 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
       startDate: '',
       endDate: ''
     });
+  };
+
+  const handleApplyFilters = () => {
+    onFiltersChange(localFilters);
   };
 
   const paymentStatusOptions = [
@@ -161,25 +173,25 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
 
   // Get display names
   const getSelectedCustomerName = () => {
-    if (!filters.customer) return 'All Customers';
-    const customer = customers.find(c => c.id.toString() === filters.customer.toString());
+    if (!localFilters.customer) return 'All Customers';
+    const customer = customers.find(c => c.id.toString() === localFilters.customer.toString());
     return customer ? customer.name : 'All Customers';
   };
 
   const getSelectedAgencyName = () => {
-    if (!filters.agency) return 'All Agencies';
-    const agency = agencies.find(a => a.id.toString() === filters.agency.toString());
+    if (!localFilters.agency) return 'All Agencies';
+    const agency = agencies.find(a => a.id.toString() === localFilters.agency.toString());
     return agency ? agency.name : 'All Agencies';
   };
 
   const getSelectedUserName = () => {
-    if (!filters.user) return 'All Users';
-    const user = users.find(u => u.id.toString() === filters.user.toString());
+    if (!localFilters.user) return 'All Users';
+    const user = users.find(u => u.id.toString() === localFilters.user.toString());
     return user ? user.name : 'All Users';
   };
 
   const getSelectedPaymentStatusName = () => {
-    const status = paymentStatusOptions.find(s => s.id === filters.paymentStatus);
+    const status = paymentStatusOptions.find(s => s.id === localFilters.paymentStatus);
     return status ? status.name : 'All Status';
   };
 
@@ -215,12 +227,20 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
     <div className="bg-white border border-[#3F75B0] rounded-lg shadow p-6 mb-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800">Filter Sales</h3>
-        <button
-          onClick={clearFilters}
-          className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors"
-        >
-          Clear All
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={clearFilters}
+            className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors"
+          >
+            Clear All
+          </button>
+          <button
+            onClick={handleApplyFilters}
+            className="px-3 py-1 bg-[#048dcc] text-white rounded text-sm hover:bg-[#036fa0] transition-colors"
+          >
+            Apply Filter
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -232,7 +252,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
           <button
             type="button"
             onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] focus:border-[#3F75B0] bg-white text-left flex items-center justify-between"
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0] bg-white text-left flex items-center justify-between"
           >
             <span className="truncate text-sm">{getSelectedCustomerName()}</span>
             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
@@ -267,7 +287,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                   type="button"
                   onClick={() => handleCustomerSelect('')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                    !filters.customer ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                    !localFilters.customer ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                   }`}
                 >
                   All Customers
@@ -280,7 +300,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                       type="button"
                       onClick={() => handleCustomerSelect(customer.id.toString())}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                        filters.customer === customer.id.toString() ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                        localFilters.customer === customer.id.toString() ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                       }`}
                     >
                       {customer.name}
@@ -339,7 +359,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                   type="button"
                   onClick={() => handleAgencySelect('')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                    !filters.agency ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                    !localFilters.agency ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                   }`}
                 >
                   All Agencies
@@ -352,7 +372,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                       type="button"
                       onClick={() => handleAgencySelect(agency.id.toString())}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                        filters.agency === agency.id.toString() ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                        localFilters.agency === agency.id.toString() ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                       }`}
                     >
                       {agency.name}
@@ -411,7 +431,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                   type="button"
                   onClick={() => handleUserSelect('')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                    !filters.user ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                    !localFilters.user ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                   }`}
                 >
                   All Users
@@ -424,7 +444,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                       type="button"
                       onClick={() => handleUserSelect(user.id.toString())}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                        filters.user === user.id.toString() ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                        localFilters.user === user.id.toString() ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                       }`}
                     >
                       {user.name}
@@ -486,7 +506,7 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
                       type="button"
                       onClick={() => handlePaymentStatusSelect(status.id)}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-[#E1F2F5] transition-colors ${
-                        filters.paymentStatus === status.id ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
+                        localFilters.paymentStatus === status.id ? 'bg-[#E1F2F5] text-[#3F75B0] font-medium' : ''
                       }`}
                     >
                       {status.name}
@@ -503,46 +523,44 @@ const SalesFilters = ({ filters, onFiltersChange }) => {
         </div>
       </div>
 
-     {/* Date Range Filter */}
-     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {/* ---- From Date ---- */}
-  <div>
-    <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-      From Date
-    </label>
-    <input
-      type="date"
-      value={filters.startDate}
-      onChange={(e) => handleDateChange('startDate', e.target.value)}
-      className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
-    />
-  </div>
+      {/* Date Range Filter */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ---- From Date ---- */}
+        <div>
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+            From Date
+          </label>
+          <input
+            type="date"
+            value={localFilters.startDate}
+            onChange={(e) => handleDateChange('startDate', e.target.value)}
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+          />
+        </div>
 
-  {/* ---- To Date – SELECTABLE EVEN IF FROM DATE IS EMPTY ---- */}
-  <div>
-    <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-      To Date
-    </label>
-    <input
-      type="date"
-      value={filters.endDate}
-      /*  min = startDate + 1 day  (only when startDate exists) */
-      min={
-        filters.startDate
-          ? new Date(new Date(filters.startDate).getTime() + 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0]
-          : ''
-      }
-      onChange={(e) => handleDateChange('endDate', e.target.value)}
-      className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
-      /*  NOT disabled any more  */
-    />
-  
-</div>
-</div>
+        {/* ---- To Date – SELECTABLE EVEN IF FROM DATE IS EMPTY ---- */}
+        <div>
+          <label className="block text-sm font-medium text-[#3F75B0] mb-1">
+            To Date
+          </label>
+          <input
+            type="date"
+            value={localFilters.endDate}
+            /*  min = startDate + 1 day  (only when startDate exists) */
+            min={
+              localFilters.startDate
+                ? new Date(new Date(localFilters.startDate).getTime() + 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0]
+                : ''
+            }
+            onChange={(e) => handleDateChange('endDate', e.target.value)}
+            className="w-full border border-[#048dcc] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3F75B0]"
+          />
+        </div>
+      </div>
     </div>
   );
-};
+}
 
 export default SalesFilters;

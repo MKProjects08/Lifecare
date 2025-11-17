@@ -18,7 +18,7 @@ const ProductTable = ({ filters }) => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -118,6 +118,12 @@ const ProductTable = ({ filters }) => {
       genericName: product.generic_name,
       quantity: product.quantity || 0,
       expiryDate: formatDateForInput(product.expiry_date),
+      createdDate: formatDateForInput(
+        product.created_at ||
+        product.createdAt ||
+        product.created_date ||
+        product.createdDate
+      ),
       agency: agencyName,
       purchaseRate: parseFloat(product.purchase_price) || 0,
       sellingRate: parseFloat(product.selling_price) || 0,
@@ -147,9 +153,9 @@ const ProductTable = ({ filters }) => {
         product.name.toLowerCase().includes(filters.productName.toLowerCase()));
 
     const matchesStartDate =
-      !filters.startDate || product.expiryDate >= filters.startDate;
+      !filters.startDate || product.createdDate >= filters.startDate;
     const matchesEndDate =
-      !filters.endDate || product.expiryDate <= filters.endDate;
+      !filters.endDate || product.createdDate <= filters.endDate;
 
     return (
       matchesAgency && matchesProductName && matchesStartDate && matchesEndDate
@@ -157,28 +163,11 @@ const ProductTable = ({ filters }) => {
   });
 
   /* -----------------------------------------------------------------
-     DYNAMIC ROWS-PER-PAGE OPTIONS (4 options)
+     FIXED ROWS-PER-PAGE OPTION
   ----------------------------------------------------------------- */
   const pageSizeOptions = useMemo(() => {
-    const total = filteredProducts.length;
-    if (total === 0) return [10];
-
-    const options = new Set();
-
-    options.add(total);
-    let power = 1;
-    while (power <= total) {
-      options.add(power);
-      power *= 2;
-    }
-    [2, 3, 5, 10].forEach((divisor) => {
-      const val = Math.floor(total / divisor);
-      if (val >= 5 && val <= total) options.add(val);
-    });
-
-    const sorted = Array.from(options).sort((a, b) => a - b);
-    return sorted.slice(-4);
-  }, [filteredProducts.length]);
+    return [15];
+  }, []);
 
   useEffect(() => {
     if (!pageSizeOptions.includes(rowsPerPage)) {

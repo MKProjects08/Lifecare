@@ -16,6 +16,7 @@ export interface Kpis {
   pendingPayments: number;
   ordersToday: number;
   activeProducts: number;
+  totalInventoryValue: number;
 }
 
 export interface RecentOrder {

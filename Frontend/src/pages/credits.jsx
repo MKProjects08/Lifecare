@@ -1,6 +1,7 @@
 // src/components/credit/Credit.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { customerService } from '../services/customerService';
+import { orderService } from '../services/orderService';
 import { toast, ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
@@ -10,6 +11,11 @@ const Credit = () => {
   const [error, setError] = useState('');
   const [totalCredits, setTotalCredits] = useState(0);
   const [withCreditsCount, setWithCreditsCount] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showOrdersModal, setShowOrdersModal] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [ordersError, setOrdersError] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,12 +161,40 @@ const Credit = () => {
     return isNaN(n) ? '0.00' : n.toFixed(2);
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
   const handleRetry = () => {
     loadCustomerBalances();
   };
 
   const refreshData = () => {
     loadCustomerBalances();
+  };
+
+  const handleViewPendingOrders = async (customer) => {
+    try {
+      setLoadingOrders(true);
+      setOrdersError('');
+      const customerId = customer.customerId;
+      const allCustomerOrders = await orderService.getOrdersByCustomer(customerId);
+      const pending = allCustomerOrders.filter(order => order.paymentstatus === 'pending');
+      if (!pending.length) {
+        toast.info('No pending orders for this pharmacy');
+        return;
+      }
+      setSelectedCustomer(customer);
+      setPendingOrders(pending);
+      setShowOrdersModal(true);
+    } catch (err) {
+      setOrdersError('Failed to load pending orders');
+      toast.error('Failed to load pending orders');
+      console.error('Error loading pending orders:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
   };
 
   /* -----------------------------------------------------------------
@@ -301,9 +335,22 @@ const Credit = () => {
                       <p className="text-lg font-bold text-red-600">{formatCurrency(customer.credits)}</p>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${customer.credits > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                        {customer.statusLabel}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${customer.credits > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                          {customer.statusLabel}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleViewPendingOrders(customer)}
+                          className="p-1 rounded-full hover:bg-gray-100 text-[#3F75B0]"
+                          title="View pending orders"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -347,7 +394,6 @@ const Credit = () => {
                 )}
               </div>
 
-             
             </div>
 
             <div className="text-sm font-semibold text-gray-700">
@@ -411,6 +457,104 @@ const Credit = () => {
               <p className="text-sm text-orange-800">
                 <strong>Note:</strong> This page shows the credits stored on each customer record. Values are read directly from the Customers table.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOrdersModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-10 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center px-6 py-4 border-b">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Pending Orders</h3>
+                {selectedCustomer && (
+                  <p className="text-sm text-gray-500">{selectedCustomer.pharmacyName} (#{selectedCustomer.customerId})</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOrdersModal(false);
+                  setPendingOrders([]);
+                  setSelectedCustomer(null);
+                  setOrdersError('');
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {loadingOrders ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading pending orders...</p>
+                  </div>
+                </div>
+              ) : ordersError ? (
+                <div className="p-6 text-red-600 text-sm">{ordersError}</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full table-auto">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="py-2 px-3 text-left text-sm font-semibold text-gray-700">Order ID</th>
+                        <th className="py-2 px-3 text-left text-sm font-semibold text-gray-700">Agency</th>
+                        <th className="py-2 px-3 text-left text-sm font-semibold text-gray-700">Order Date</th>
+                        <th className="py-2 px-3 text-left text-sm font-semibold text-gray-700">Gross Total</th>
+                        <th className="py-2 px-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="py-6 px-4 text-center text-gray-500 text-sm">
+                            No pending orders found.
+                          </td>
+                        </tr>
+                      ) : (
+                        pendingOrders.map((order) => (
+                          <tr key={order.Order_ID || order.id} className="border-b border-gray-100">
+                            <td className="py-2 px-3 text-sm font-mono text-blue-600">
+                              {order.FormattedOrderID || `ORD-${order.Order_ID || order.id}`}
+                            </td>
+                            <td className="py-2 px-3 text-sm text-gray-800">{order.AgencyName || 'N/A'}</td>
+                            <td className="py-2 px-3 text-sm text-gray-800">
+                              {formatDate(order.created_at || order.paid_date)}
+                            </td>
+                            <td className="py-2 px-3 text-sm text-gray-800">{formatCurrency(order.gross_total)}</td>
+                            <td className="py-2 px-3 text-sm">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                {order.paymentstatus || 'pending'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOrdersModal(false);
+                  setPendingOrders([]);
+                  setSelectedCustomer(null);
+                  setOrdersError('');
+                }}
+                className="px-4 py-2 rounded bg-gray-200 text-gray-700 text-sm hover:bg-gray-300"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

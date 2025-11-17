@@ -178,7 +178,7 @@ const ProductFilters = ({ onFilterChange }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-                From Date (Expiry)
+                From Date (Purchase / Updated)
               </label>
               <input
                 type="date"
@@ -190,7 +190,7 @@ const ProductFilters = ({ onFilterChange }) => {
 
             <div>
               <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-                To Date (Expiry)
+                To Date (Purchase / Updated)
               </label>
               <input
                 type="date"
@@ -337,10 +337,10 @@ const ProductFilters = ({ onFilterChange }) => {
           />
         </div>
 
-        {/* ==== From Date (Expiry) ==== */}
+        {/* ==== From Date (Purchase / Updated) ==== */}
         <div>
           <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-            From Date (Expiry)
+            From Date (Purchase / Updated)
           </label>
           <input
             type="date"
@@ -350,10 +350,10 @@ const ProductFilters = ({ onFilterChange }) => {
           />
         </div>
 
-        {/* ==== To Date (Expiry) ==== */}
+        {/* ==== To Date (Purchase / Updated) ==== */}
         <div>
           <label className="block text-sm font-medium text-[#3F75B0] mb-1">
-            To Date (Expiry)
+            To Date (Purchase / Updated)
           </label>
           <input
             type="date"
