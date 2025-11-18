@@ -21,6 +21,9 @@ router.get('/', orderController.getAllOrders);
 router.post('/', orderController.createOrder);
 
 // ⚠️ Parameter routes MUST come LAST
+// Printable HTML invoice for an order
+router.get('/:id/print-html', orderController.getOrderPrintHtml);
+
 // Get order by ID
 router.get('/:id', orderController.getOrderById);
 
