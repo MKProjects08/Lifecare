@@ -205,7 +205,7 @@ exports.getOrderPrintHtml = async (req, res) => {
     <style>
       @media print {
         @page {
-          margin: 1cm;
+          margin: 0.7cm;
           size: A4;
         }
         body {
@@ -215,125 +215,260 @@ exports.getOrderPrintHtml = async (req, res) => {
           print-color-adjust: exact;
         }
       }
+
       body {
         font-family: Arial, Helvetica, sans-serif;
-        background: #ffffff;
+        background: #e3f0e8; /* light pastel like invoice paper */
+        font-size: 11px;
       }
-      .invoice-container {
-        max-width: 21cm;
-        margin: 24px auto;
+
+      .page {
+        width: 19.5cm;
+        min-height: 27.5cm;
+        margin: 0 auto;
+        background: #f8fff9;
+        border: 1px solid #a3b8a5;
+        padding: 10mm 10mm 8mm 10mm;
+        box-sizing: border-box;
+      }
+
+      .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6mm;
+      }
+
+      .header-left {
+        max-width: 60%;
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .header-sub {
+        margin-top: 2px;
+        font-size: 10px;
+      }
+
+      .header-right {
+        text-align: right;
+        font-size: 10px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        border: 1px solid #6b7280;
+        font-size: 9px;
+        font-weight: 700;
+        margin-top: 2mm;
+      }
+
+      .section-box {
+        border: 1px solid #a3b8a5;
+        padding: 4px 6px;
+        margin-bottom: 4mm;
+      }
+
+      .section-title {
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 10mm;
+        row-gap: 1mm;
+        font-size: 10px;
+      }
+
+      .meta-label {
+        font-weight: 600;
+        min-width: 28mm;
+        display: inline-block;
+      }
+
+      table.invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #a3b8a5;
+        font-size: 10px;
+      }
+
+      table.invoice-table th,
+      table.invoice-table td {
+        border: 1px solid #a3b8a5;
+        padding: 2px 3px;
+        text-align: center;
+        vertical-align: middle;
+        word-wrap: break-word;
+      }
+
+      table.invoice-table th {
+        background: #d7e7db;
+        font-weight: 700;
+      }
+
+      .text-left { text-align: left; }
+      .text-right { text-align: right; }
+
+      .summary-row {
+        margin-top: 3mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+      }
+
+      .summary-left {
+        width: 40%;
+      }
+
+      .summary-right {
+        width: 45%;
+      }
+
+      .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+
+      .summary-table td {
+        padding: 3px 4px;
+        border: 1px solid #a3b8a5;
+      }
+
+      .footer-row {
+        margin-top: 8mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+      }
+
+      .signature-box {
+        width: 48%;
+      }
+
+      .signature-line {
+        margin-top: 16mm;
+        border-bottom: 1px solid #111827;
+      }
+
+      .bottom-note {
+        margin-top: 6mm;
+        text-align: center;
+        font-size: 9px;
+      }
+
+      .back-button {
+        margin-top: 3mm;
+        padding: 3px 10px;
+        font-size: 9px;
+        font-weight: 600;
+        border-radius: 999px;
+        border: 1px solid #9ca3af;
         background: #ffffff;
-        padding: 32px;
+        color: #374151;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
-    <div class="invoice-container">
-      <div style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:4px solid #111827;">
-        <h1 style="font-size:28px;font-weight:700;color:#111827;margin:0 0 4px 0;letter-spacing:0.05em;">Life Care Distribution</h1>
-        <p style="font-size:12px;color:#4b5563;text-transform:uppercase;letter-spacing:0.15em;margin:0;">Pharmaceutical Distribution Services</p>
+    <div class="page">
+      <div class="header-row">
+        <div class="header-left">
+          <div class="header-title">Life Care Distribution</div>
+          <div class="header-sub">Pharmaceutical Distribution Services</div>
+        </div>
+        <div class="header-right">
+          <div>Invoice No: <strong>${escapeHtml(order.FormattedOrderID || order.Order_ID)}</strong></div>
+          <div>Date: <strong>${escapeHtml(formatDate(order.created_at || order.order_date))}</strong></div>
+          <div class="badge">${printBadgeText}</div>
+        </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+      <div class="section-box">
+        <div class="section-title">Customer</div>
+        <div>${escapeHtml(order.CustomerName || order.customer_name || 'N/A')}</div>
+      </div>
+
+      <div class="meta-grid section-box" style="margin-bottom:5mm;">
         <div>
-          <h2 style="font-size:22px;font-weight:700;color:#1f2937;margin:0 0 8px 0;">INVOICE</h2>
-          <div style="font-size:13px;color:#111827;">
-            <div style="display:flex;">
-              <span style="font-weight:600;color:#374151;width:110px;">Invoice No:</span>
-              <span>${escapeHtml(order.FormattedOrderID || order.Order_ID)}</span>
-            </div>
-            <div style="display:flex;margin-top:4px;">
-              <span style="font-weight:600;color:#374151;width:110px;">Date:</span>
-              <span>${escapeHtml(formatDate(order.created_at || order.order_date))}</span>
-            </div>
-          </div>
+          <span class="meta-label">Order ID:</span>
+          <span>${escapeHtml(String(order.Order_ID || ''))}</span>
         </div>
-
-        <div style="text-align:right;">
-          <div style="display:inline-block;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;color:#ffffff;background:${isOriginal ? '#16a34a' : '#f97316'};">
-            ${printBadgeText}
-          </div>
-          <div style="margin-top:12px;font-size:13px;">
-            <span style="font-weight:600;color:#374151;margin-right:4px;">Payment Status:</span>
-            <span style="font-weight:700;color:${isPaid ? '#16a34a' : '#ea580c'};">${escapeHtml(paymentStatus)}</span>
-          </div>
+        <div>
+          <span class="meta-label">User:</span>
+          <span>${escapeHtml(order.UserName || '')}</span>
+        </div>
+        <div>
+          <span class="meta-label">Agency:</span>
+          <span>${escapeHtml(order.AgencyName || '')}</span>
         </div>
       </div>
 
-      <div style="margin-bottom:24px;padding:12px 16px;background:#f3f4f6;border-radius:8px;border:2px solid #d1d5db;">
-        <p style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin:0 0 4px 0;">Bill To:</p>
-        <p style="font-size:18px;font-weight:700;color:#111827;margin:0;">${escapeHtml(order.CustomerName || order.customer_name || 'N/A')}</p>
-      </div>
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th style="width:4%;">No</th>
+            <th class="text-left" style="width:26%;">Description</th>
+            <th style="width:9%;">Batch</th>
+            <th style="width:8%;">Exp</th>
+            <th style="width:8%;">Qty</th>
+            <th style="width:7%;">FOC</th>
+            <th style="width:9%;">Rate</th>
+            <th style="width:10%;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
 
-      <div style="margin-bottom:24px;">
-        <table style="width:100%;font-size:12px;border:2px solid #111827;border-collapse:collapse;">
-          <thead>
-            <tr style="background:#111827;color:#ffffff;">
-              <th style="text-align:left;padding:10px 10px;font-weight:700;border-right:1px solid #374151;width:5%;">#</th>
-              <th style="text-align:left;padding:10px 10px;font-weight:700;border-right:1px solid #374151;width:32%;">Product Name</th>
-              <th style="text-align:center;padding:10px 6px;font-weight:700;border-right:1px solid #374151;width:12%;">Batch No</th>
-              <th style="text-align:center;padding:10px 6px;font-weight:700;border-right:1px solid #374151;width:11%;">Exp. Date</th>
-              <th style="text-align:center;padding:10px 6px;font-weight:700;border-right:1px solid #374151;width:8%;">Qty</th>
-              <th style="text-align:center;padding:10px 6px;font-weight:700;border-right:1px solid #374151;width:8%;">FOC</th>
-              <th style="text-align:right;padding:10px 10px;font-weight:700;border-right:1px solid #374151;width:12%;">Rate</th>
-              <th style="text-align:right;padding:10px 10px;font-weight:700;width:12%;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;margin-bottom:32px;">
-        <div style="width:50%;padding:16px;background:#f3f4f6;border-radius:8px;border:2px solid #d1d5db;font-size:14px;font-weight:700;color:#1f2937;">
-          Total Items: <span style="margin-left:8px;color:#111827;">${items.length}</span>
+      <div class="summary-row">
+        <div class="summary-left">
+          <div>Total Items: <strong>${items.length}</strong></div>
         </div>
-        <div style="width:42%;">
-          <table style="width:100%;border:2px solid #111827;border-collapse:collapse;font-size:13px;">
+        <div class="summary-right">
+          <table class="summary-table">
             <tbody>
-              <tr style="background:#f3f4f6;border-bottom:2px solid #d1d5db;">
-                <td style="padding:10px 14px;font-weight:600;color:#374151;">Net Product Value:</td>
-                <td style="padding:10px 14px;text-align:right;font-weight:600;color:#111827;">${format(grossTotal)}</td>
+              <tr>
+                <td class="text-left">Gross Amount</td>
+                <td class="text-right">${format(grossTotal)}</td>
               </tr>
-              <tr style="background:#ffffff;border-bottom:2px solid #d1d5db;">
-                <td style="padding:10px 14px;font-weight:600;color:#374151;">Discount:</td>
-                <td style="padding:10px 14px;text-align:right;font-weight:600;color:#b91c1c;">-${format(discountAmount)}</td>
-              </tr>
-              <tr style="background:#111827;color:#ffffff;">
-                <td style="padding:12px 14px;font-weight:700;font-size:15px;">TOTAL AMOUNT:</td>
-                <td style="padding:12px 14px;text-align:right;font-weight:700;font-size:16px;">${format(finalTotal)}</td>
+              <tr>
+                <td class="text-left">Total Discount</td>
+                <td class="text-right">${format(discountAmount)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style="margin-top:32px;padding-top:16px;border-top:2px solid #9ca3af;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:48px;">
-        <div>
-          <p style="font-size:12px;font-weight:700;color:#374151;margin:0 0 4px 0;">Customer Signature:</p>
-          <div style="margin-top:60px;border-bottom:2px solid #111827;"></div>
-          <p style="font-size:10px;color:#6b7280;margin-top:4px;">Date: _______________</p>
+      <div class="footer-row">
+        <div class="signature-box">
+          <div><strong>Customer Signature</strong></div>
+          <div class="signature-line"></div>
         </div>
-        <div>
-          <p style="font-size:12px;font-weight:700;color:#374151;margin:0 0 4px 0;">Authorized Signature:</p>
-          <div style="margin-top:60px;border-bottom:2px solid #111827;"></div>
-          <p style="font-size:10px;color:#6b7280;margin-top:4px;">Name &amp; Stamp</p>
+        <div class="signature-box" style="text-align:right;">
+          <div><strong>Authorized Signature</strong></div>
+          <div class="signature-line"></div>
         </div>
       </div>
 
-      <div style="margin-top:28px;padding-top:12px;border-top:1px solid #d1d5db;text-align:center;">
-        <p style="font-size:10px;color:#6b7280;margin:0;">Thank you for your business!</p>
-        <p style="font-size:10px;color:#9ca3af;margin:2px 0 0 0;">This is a computer-generated invoice</p>
-        <div style="margin-top:12px;">
-          <button 
-            onclick="window.location.href = '/orders';" 
-            style="padding:6px 14px;font-size:11px;font-weight:600;border-radius:999px;border:1px solid #9ca3af;background:#ffffff;color:#374151;cursor:pointer;">
-            ← Back to Orders
-          </button>
-        </div>
+      <div class="bottom-note">
+        <div>Thank you for your business!</div>
+        <div style="color:#6b7280;">This is a computer-generated invoice by Life Care Distribution </div>
+        <div style="color:#6b7280;">Powered by MK Projects © 2025</div>
       </div>
     </div>
+
     <script>
       window.onload = function() {
         setTimeout(function() { window.print(); }, 400);
