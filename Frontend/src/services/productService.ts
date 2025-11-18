@@ -242,6 +242,43 @@ export const productService = {
       console.error('Error in productService.getProductsWithFilters:', error);
       throw error;
     }
+  },
+
+  getProductsReportPrintHtml: async (filters: {
+    agency?: string;
+    productName?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<string> => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+      }
+
+      const params = new URLSearchParams();
+      const add = (key: string, value?: string) => {
+        if (value && value.trim() !== '') params.append(key, value.trim());
+      };
+
+      add('agency', filters.agency);
+      add('productName', filters.productName);
+      add('startDate', filters.startDate);
+      add('endDate', filters.endDate);
+
+      const url = `${API_BASE_URL}/products/report/print-html?${params.toString()}`;
+      const response = await fetch(url, { method: 'GET', headers: getHeaders() });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `HTTP ${response.status}`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      console.error('Error in productService.getProductsReportPrintHtml:', error);
+      throw error;
+    }
   }
 };
 

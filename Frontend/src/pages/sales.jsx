@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SalesFilters from '../components/sales/SalesFilters';
 import SalesTable from '../components/sales/SalesTable';
+import { analyticsService } from '../services/analyticsService';
 
 const Sales = () => {
   const [filters, setFilters] = useState({
@@ -22,8 +23,16 @@ const Sales = () => {
     window.location.reload();
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      const html = await analyticsService.getSalesReportPrintHtml(filters);
+      document.open();
+      document.write(html);
+      document.close();
+    } catch (e) {
+      console.error('Failed to open printable sales report:', e);
+      alert('Failed to open sales report for printing: ' + (e.message || 'Unknown error'));
+    }
   };
 
   return (

@@ -95,4 +95,41 @@ export const analyticsService = {
     );
     return handleResponse(res);
   },
+
+  getSalesReportPrintHtml: async (filters: {
+    customer?: string;
+    agency?: string;
+    user?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
+    paidStartDate?: string;
+    paidEndDate?: string;
+  }): Promise<string> => {
+    ensureAuth();
+
+    const params = new URLSearchParams();
+    const add = (key: string, value?: string) => {
+      if (value && value.trim() !== '') params.append(key, value.trim());
+    };
+
+    add('customer', filters.customer);
+    add('agency', filters.agency);
+    add('user', filters.user);
+    add('paymentStatus', filters.paymentStatus);
+    add('startDate', filters.startDate);
+    add('endDate', filters.endDate);
+    add('paidStartDate', filters.paidStartDate);
+    add('paidEndDate', filters.paidEndDate);
+
+    const url = `${API_BASE_URL}/analytics/sales-report/print-html?${params.toString()}`;
+    const res = await fetch(url, { headers: getHeaders() });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    return res.text();
+  },
 };

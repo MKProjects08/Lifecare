@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import ProductTable from "../components/product/ProductTable";
 import ProductFilters from "../components/product/ProductFilters";
 import SmartProductModal from "../components/product/ProductModal";
+import { productService } from "../services/productService";
 
 const Products = () => {
   const [filters, setFilters] = useState({
@@ -30,25 +31,48 @@ const Products = () => {
     setShowAddModal(false);
   };
 
+  const handlePrint = async () => {
+    try {
+      const html = await productService.getProductsReportPrintHtml(filters);
+      document.open();
+      document.write(html);
+      document.close();
+    } catch (e) {
+      console.error('Failed to open printable products report:', e);
+      alert('Failed to open products report for printing: ' + (e.message || 'Unknown error'));
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className=" mx-auto">
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold text-[#3F75B0] mb-2">Inventory</h2>
-            
           </div>
           
-          {/* Add Product Button */}
-          <button
-            onClick={handleAddProduct}
-            className="px-4 py-2 bg-[#29996B] hover:bg-green-700 text-white font-medium rounded-lg shadow-sm focus:outline-none  transition-colors duration-200 flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Product
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrint}
+              className="px-4 py-2 bg-white border border-[#048dcc] text-[#048dcc] rounded-lg shadow-sm hover:bg-[#E1F2F5] focus:outline-none transition-colors duration-200 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V4a2 2 0 012-2h8a2 2 0 012 2v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M10 18h4" />
+              </svg>
+              Print
+            </button>
+
+            {/* Add Product Button */}
+            <button
+              onClick={handleAddProduct}
+              className="px-4 py-2 bg-[#29996B] hover:bg-green-700 text-white font-medium rounded-lg shadow-sm focus:outline-none  transition-colors duration-200 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Product
+            </button>
+          </div>
         </div>
 
         <div className="">
