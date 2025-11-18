@@ -4,6 +4,7 @@ const productsController = require("../controllers/productsController");
 
 // CRUD routes
 router.get("/", productsController.getAllProducts);
+router.get("/report/print-html", productsController.getProductsReportPrintHtml);
 router.get("/:id", productsController.getProductById);
 router.post("/", productsController.createProduct);
 router.put("/:id", productsController.updateProduct);

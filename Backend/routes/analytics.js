@@ -8,5 +8,6 @@ router.get('/recent-orders', analytics.getRecentOrders);
 router.get('/top-credits', analytics.getTopCredits);
 // routes/analytics.js
 router.get('/sales-by-month', analytics.getSalesByMonth);
+router.get('/sales-report/print-html', analytics.getSalesReportPrintHtml);
 
 module.exports = router;

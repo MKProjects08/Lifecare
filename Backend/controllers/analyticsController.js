@@ -188,6 +188,291 @@ exports.getRecentOrders = async (req, res) => {
   }
 };
 
+// Printable HTML sales report with filters
+exports.getSalesReportPrintHtml = async (req, res) => {
+  try {
+    const {
+      customer = '',
+      agency = '',
+      user = '',
+      paymentStatus = 'all',
+      startDate = '',
+      endDate = '',
+      paidStartDate = '',
+      paidEndDate = ''
+    } = req.query;
+
+    const where = [];
+    const params = [];
+
+    // Only orders that have been printed at least once
+    where.push('o.print_count IS NOT NULL AND o.print_count > 0');
+
+    if (customer) {
+      where.push('o.Customer_ID = ?');
+      params.push(customer);
+    }
+    if (agency) {
+      where.push('o.Agency_ID = ?');
+      params.push(agency);
+    }
+    if (user) {
+      where.push('o.User_ID = ?');
+      params.push(user);
+    }
+    if (paymentStatus && paymentStatus !== 'all') {
+      where.push('LOWER(o.paymentstatus) = LOWER(?)');
+      params.push(paymentStatus);
+    }
+
+    if (startDate) {
+      where.push('DATE(o.created_at) >= ?');
+      params.push(startDate);
+    }
+    if (endDate) {
+      where.push('DATE(o.created_at) <= ?');
+      params.push(endDate);
+    }
+
+    if (paidStartDate) {
+      where.push('o.paid_date IS NOT NULL AND DATE(o.paid_date) >= ?');
+      params.push(paidStartDate);
+    }
+    if (paidEndDate) {
+      where.push('o.paid_date IS NOT NULL AND DATE(o.paid_date) <= ?');
+      params.push(paidEndDate);
+    }
+
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+    const [rows] = await db.query(
+      `SELECT 
+         o.Order_ID,
+         CONCAT('O', LPAD(o.Order_ID, 5, '0')) AS FormattedOrderID,
+         o.Customer_ID,
+         o.Agency_ID,
+         o.User_ID,
+         o.created_at,
+         o.paid_date,
+         o.paymentstatus,
+         o.gross_total,
+         o.discount_amount,
+         c.pharmacyname AS CustomerName,
+         a.agencyname AS AgencyName,
+         u.username AS UserName
+       FROM Orders o
+       LEFT JOIN Customers c ON o.Customer_ID = c.Customer_ID
+       JOIN Agency a ON o.Agency_ID = a.Agency_ID
+       JOIN Users u ON o.User_ID = u.User_ID
+       ${whereSql}
+       ORDER BY o.created_at ASC, o.Order_ID ASC`,
+      params
+    );
+
+    const format = (n) => {
+      const v = typeof n === 'string' ? parseFloat(n) : n;
+      return isNaN(v) ? '0.00' : v.toFixed(2);
+    };
+
+    const formatDate = (d) => {
+      if (!d) return '';
+      try {
+        const date = new Date(d);
+        return date.toLocaleDateString('en-GB');
+      } catch {
+        return '';
+      }
+    };
+
+    const escapeHtml = (str) => {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const rowsHtml = rows.length === 0
+      ? `<tr>
+           <td colspan="8" style="text-align:center;padding:10px;border:1px solid #a3b8a5;color:#6b7280;">No sales match the selected filters</td>
+         </tr>`
+      : rows.map((r, idx) => `
+          <tr>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;text-align:center;">${idx + 1}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;">${escapeHtml(r.FormattedOrderID)}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;">${escapeHtml(r.CustomerName || 'N/A')}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;">${escapeHtml(r.AgencyName || 'N/A')}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;">${escapeHtml(r.UserName || 'N/A')}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;">${escapeHtml(formatDate(r.created_at))}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;text-align:right;">${format(r.gross_total)}</td>
+            <td style="border:1px solid #a3b8a5;padding:2px 4px;text-align:right;">${format(r.discount_amount)}</td>
+          </tr>`).join('');
+
+    const totals = rows.reduce((acc, r) => {
+      acc.gross += parseFloat(r.gross_total) || 0;
+      acc.discount += parseFloat(r.discount_amount) || 0;
+      return acc;
+    }, { gross: 0, discount: 0 });
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales Report</title>
+    <style>
+      @media print {
+        @page {
+          margin: 0.7cm;
+          size: A4;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #e3f0e8;
+        font-size: 11px;
+      }
+
+      .page {
+        width: 19.5cm;
+        min-height: 27.5cm;
+        margin: 0 auto;
+        background: #f8fff9;
+        border: 1px solid #a3b8a5;
+        padding: 10mm;
+        box-sizing: border-box;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6mm;
+      }
+
+      .title {
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .sub {
+        font-size: 10px;
+        margin-top: 2px;
+      }
+
+      .meta {
+        font-size: 10px;
+        text-align: right;
+      }
+
+      table.report {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+
+      table.report th,
+      table.report td {
+        border: 1px solid #a3b8a5;
+        padding: 2px 4px;
+      }
+
+      table.report th {
+        background: #d7e7db;
+        font-weight: 700;
+      }
+
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+
+      .summary {
+        margin-top: 4mm;
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <div>
+          <div class="title">Life Care Distribution</div>
+          <div class="sub">Sales Report</div>
+        </div>
+        <div class="meta">
+          <div>Printed: ${escapeHtml(new Date().toLocaleString('en-GB'))}</div>
+        </div>
+      </div>
+
+      <div style="font-size:10px;margin-bottom:5mm;">
+        <strong>Filters:</strong>
+        <div>
+          Customer: ${customer ? escapeHtml(String(customer)) : 'All'}<br/>
+          Agency: ${agency ? escapeHtml(String(agency)) : 'All'}<br/>
+          User: ${user ? escapeHtml(String(user)) : 'All'}<br/>
+          Payment Status: ${paymentStatus && paymentStatus !== 'all' ? escapeHtml(String(paymentStatus)) : 'All'}<br/>
+          Order Date: ${startDate || endDate 
+            ? `From ${escapeHtml(startDate || 'Any')} To ${escapeHtml(endDate || 'Any')}`
+            : 'All'}<br/>
+          Paid Date: ${paidStartDate || paidEndDate 
+            ? `From ${escapeHtml(paidStartDate || 'Any')} To ${escapeHtml(paidEndDate || 'Any')}`
+            : 'All'}
+        </div>
+      </div>
+
+      <table class="report">
+        <thead>
+          <tr>
+            <th style="width:4%;" class="text-center">No</th>
+            <th style="width:10%;" class="text-left">Order ID</th>
+            <th style="width:20%;" class="text-left">Customer</th>
+            <th style="width:16%;" class="text-left">Agency</th>
+            <th style="width:14%;" class="text-left">User</th>
+            <th style="width:14%;" class="text-left">Order Date</th>
+            <th style="width:11%;" class="text-right">Gross</th>
+            <th style="width:11%;" class="text-right">Discount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div>Total Orders: <strong>${rows.length}</strong></div>
+        <div>Total Gross: <strong>${format(totals.gross)}</strong></div>
+        <div>Total Discount: <strong>${format(totals.discount)}</strong></div>
+      </div>
+    </div>
+
+    <script>
+      window.onload = function() {
+        setTimeout(function() { window.print(); }, 400);
+      };
+      window.onafterprint = function() {
+        try { window.location.href = '/sales'; } catch (e) {}
+      };
+    </script>
+  </body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (err) {
+    console.error('Error in getSalesReportPrintHtml:', err);
+    res.status(500).send('<h1>Failed to generate sales report</h1>');
+  }
+};
+
 exports.getTopCredits = async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 5, 50);
