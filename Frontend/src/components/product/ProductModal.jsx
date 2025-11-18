@@ -170,22 +170,19 @@ const SmartProductModal = ({ product, mode = "add", onClose, onSave }) => {
     }
   };
 
-  const fetchBatchesForProduct = async (productName) => {
-    try {
-      const data = await productService.getProducts({ 
-        productname: productName, 
-        is_active: 1 
-      });
-      
-      const batches = data
-        .filter(product => product.productname === productName && product.is_active === 1)
-        .map(product => product.BatchNumber)
-        .filter((batch, index, self) => self.indexOf(batch) === index);
-      
-      setExistingBatches(batches);
-    } catch (error) {
-      console.error('Error fetching batches:', error);
+  const fetchBatchesForProduct = (productName) => {
+    // Use already loaded allProducts to derive batches for the selected product
+    if (!productName || !Array.isArray(allProducts)) {
+      setExistingBatches([]);
+      return;
     }
+
+    const batches = allProducts
+      .filter((product) => product.productname === productName && product.is_active === 1)
+      .map((product) => product.BatchNumber)
+      .filter((batch, index, self) => self.indexOf(batch) === index);
+
+    setExistingBatches(batches);
   };
 
   const handleProductSelect = (selectedValue) => {
