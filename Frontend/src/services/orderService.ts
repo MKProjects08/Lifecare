@@ -105,6 +105,32 @@ export const orderService = {
     }
   },
 
+  // ✅ Get printable HTML invoice for an order
+  getOrderPrintHtml: async (id: string | number): Promise<string> => {
+    try {
+      const token = getAuthToken();
+
+      if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/orders/${id}/print-html`, {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `HTTP ${response.status}`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      console.error('Error in orderService.getOrderPrintHtml:', error);
+      throw error;
+    }
+  },
+
   // ✅ Create new order (single order without items)
   createOrder: async (orderData: {
     Customer_ID: number | null;
