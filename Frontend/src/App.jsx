@@ -46,7 +46,7 @@ function App() {
         <Route path="/unauthorized" element={<div>Unauthorized Access</div>} />
 
         {/* 🧭 Protected routes */}
-        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+        <Route element={<ProtectedRoute allowedRoles={["admin", "worker"]} />}>
           <Route path="/dashboard" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
           </Route>
@@ -81,8 +81,8 @@ function App() {
         </Route>
 
         
-        {/*  pages for admin  */}
-        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+        {/*  pages for admin and worker  */}
+        <Route element={<ProtectedRoute allowedRoles={["admin", "worker"]} />}>
           <Route path="/sales" element={<AdminLayout />}>
             <Route index element={<Sales />} />
           </Route>

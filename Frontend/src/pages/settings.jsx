@@ -130,6 +130,8 @@ const Settings = () => {
         username: formData.username.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
+        role: formData.role,
+        is_active: formData.is_active,
       };
       if (formData.password) payload.password = formData.password;
       await userService.updateUser(currentUserId, payload);

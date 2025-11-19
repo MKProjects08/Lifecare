@@ -19,6 +19,7 @@ export interface CreateUserData {
   role: string;
   email: string;
   phone: string;
+  is_active?: boolean;
 }
 
 export interface UpdateUserData {
@@ -27,6 +28,7 @@ export interface UpdateUserData {
   role: string;
   email: string;
   phone: string;
+  is_active?: boolean;
 }
 
 export const userService = {

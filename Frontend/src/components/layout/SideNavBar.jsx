@@ -33,14 +33,7 @@ const adminPaths = [
 const rolePermissions = {
   admin: adminPaths,
   Owner: adminPaths,
-  worker: [
-  "/dashboard",
-  "/billing",
-  "/products",
-  "/orders",
-  "/alerts",
-  "/settings",
-  ],
+  worker: adminPaths,
 };
 
 const ALL_ITEMS = [
@@ -64,8 +57,8 @@ const SideNavBar = ({ userRole = "worker" }) => {
   const itemsToShow = ALL_ITEMS.filter((i) => allowedPaths.includes(i.path));
 
   const makeHref = (path) => {
-    if (path === "/dashboard" && userRole === "worker") return "/worker-dashboard";
-    return path; // absolute paths like /products
+    // All roles, including worker, go to the main /dashboard route
+    return path;
   };
 
   const isActive = (href) => {

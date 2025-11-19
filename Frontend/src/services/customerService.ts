@@ -20,6 +20,7 @@ export interface CreateCustomerData {
   address: string;
   email: string;
   credits: number;
+  is_active?: boolean;
 }
 
 export interface UpdateCustomerData {
@@ -29,10 +30,11 @@ export interface UpdateCustomerData {
   address: string;
   email: string;
   credits: number;
+  is_active?: boolean;
 }
 
 export const customerService = {
-  // ✅ Get all customers
+  // Get all customers
   getAllCustomers: async (): Promise<Customer[]> => {
     try {
       const token = getAuthToken();

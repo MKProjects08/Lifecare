@@ -21,6 +21,7 @@ export interface CreateAgencyData {
   address: string;
   sales: number;
   target: number;
+  is_active?: boolean;
 }
 
 export interface UpdateAgencyData {
@@ -31,10 +32,11 @@ export interface UpdateAgencyData {
   address: string;
   sales: number;
   target: number;
+  is_active?: boolean;
 }
 
 export const agencyService = {
-  // ✅ Get all agencies
+  // Get all agencies
   getAllAgencies: async (): Promise<Agency[]> => {
     try {
       const token = getAuthToken();

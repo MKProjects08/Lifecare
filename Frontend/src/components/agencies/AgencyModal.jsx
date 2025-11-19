@@ -8,8 +8,10 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
     email: '',
     address: '',
     sales: 0,
-    target: 0
+    target: 0,
+    is_active: true
   });
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +24,8 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
         email: agency.email || '',
         address: agency.address || '',
         sales: agency.sales || 0,
-        target: agency.target || 0
+        target: agency.target || 0,
+        is_active: agency.is_active !== false
       });
     } else {
       // Reset form for add mode
@@ -33,7 +36,8 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
         email: '',
         address: '',
         sales: 0,
-        target: 0
+        target: 0,
+        is_active: true
       });
     }
   }, [agency, mode]);
@@ -79,7 +83,7 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value
+      [name]: type === 'number' ? parseFloat(value) || 0 : type === 'checkbox' ? e.target.checked : value
     }));
     
     // Clear error when user starts typing
@@ -289,6 +293,21 @@ const AgencyModal = ({ agency, mode, onClose, onSave }) => {
                 <p className="text-red-500 text-xs mt-1">{errors.target}</p>
               )}
             </div>
+          </div>
+
+          {/* Active Status */}
+          <div className="flex items-center gap-3">
+            <label className="block text-sm font-medium text-[#3F75B0]">
+              Active
+            </label>
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={!!formData.is_active}
+              onChange={handleChange}
+              disabled={mode === 'view'}
+              className="h-4 w-4"
+            />
           </div>
 
           {/* Action Buttons */}
