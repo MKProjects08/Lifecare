@@ -24,10 +24,10 @@ const authController = {
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
-      // Query user by email
+      // Query user by email OR username so the same field can be used for either
       const [rows] = await pool.execute(
-        'SELECT * FROM Users WHERE email = ? AND is_active = TRUE',
-        [email]
+        'SELECT * FROM Users WHERE (email = ? OR username = ?) AND is_active = TRUE',
+        [email, email]
       );
 
       if (rows.length === 0) {

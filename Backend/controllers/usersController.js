@@ -46,7 +46,7 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, password, role, email, phone } = req.body;
+    const { username, password, role, email, phone, is_active } = req.body;
 
     // Hash password if provided
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
@@ -57,6 +57,11 @@ exports.updateUser = async (req, res) => {
     if (hashedPassword) {
       sql += ", password=?";
       params.push(hashedPassword);
+    }
+
+    if (typeof is_active !== 'undefined') {
+      sql += ", is_active=?";
+      params.push(is_active);
     }
 
     sql += " WHERE User_ID=?";

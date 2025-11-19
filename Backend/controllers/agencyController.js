@@ -25,7 +25,7 @@ exports.getAgencies = async (req, res) => {
 // ===================== Get Agency by ID =====================
 exports.getAgencyById = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM agency WHERE id = ?", [req.params.id]);
+        const [rows] = await db.query("SELECT * FROM Agency WHERE Agency_ID = ?", [req.params.id]);
         if (rows.length === 0) {
             return res.status(404).json({ message: "Agency not found" });
         }
@@ -41,7 +41,7 @@ exports.createAgency = async (req, res) => {
         const { agencyname, contact_person, phone, email, address, sales, target } = req.body;
 
         const [result] = await db.query(
-            "INSERT INTO agency (agencyname, contact_person, phone, email, address, sales, target) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO Agency (agencyname, contact_person, phone, email, address, sales, target) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [agencyname, contact_person, phone, email, address, sales, target]
         );
 
@@ -54,12 +54,20 @@ exports.createAgency = async (req, res) => {
 // ===================== Update Agency =====================
 exports.updateAgency = async (req, res) => {
     try {
-        const { agencyname, contact_person, phone, email, address, sales, target } = req.body;
+        const { agencyname, contact_person, phone, email, address, sales, target, is_active } = req.body;
 
-        const [result] = await db.query(
-            "UPDATE agency SET agencyname=?, contact_person=?, phone=?, email=?, address=?, sales=?, target=? WHERE id=?",
-            [agencyname, contact_person, phone, email, address, sales, target, req.params.id]
-        );
+        let sql = "UPDATE Agency SET agencyname=?, contact_person=?, phone=?, email=?, address=?, sales=?, target=?";
+        const params = [agencyname, contact_person, phone, email, address, sales, target];
+
+        if (typeof is_active !== 'undefined') {
+            sql += ", is_active=?";
+            params.push(is_active);
+        }
+
+        sql += " WHERE Agency_ID=?";
+        params.push(req.params.id);
+
+        const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: "Agency not found" });

@@ -385,6 +385,8 @@ exports.getOrderPrintHtml = async (req, res) => {
         <div class="header-left">
           <div class="header-title">Life Care Distribution</div>
           <div class="header-sub">Pharmaceutical Distribution Services</div>
+          <div class="header-sub">Life Care Pharmacy, K.k.s Road, Maviddapuram, Jaffna</div>
+          <div class="header-sub">Tel: 0764671013 (Distribution & Pharmacy)</div>
         </div>
         <div class="header-right">
           <div>Invoice No: <strong>${escapeHtml(order.FormattedOrderID || order.Order_ID)}</strong></div>
@@ -465,7 +467,7 @@ exports.getOrderPrintHtml = async (req, res) => {
       <div class="bottom-note">
         <div>Thank you for your business!</div>
         <div style="color:#6b7280;">This is a computer-generated invoice by Life Care Distribution </div>
-        <div style="color:#6b7280;">Powered by MK Projects © 2025</div>
+        <div style="color:#6b7280;">Powered by MK Projects (0778146469) © 2025</div>
       </div>
     </div>
 

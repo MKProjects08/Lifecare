@@ -37,19 +37,19 @@ app.use('/api/products',
 
 app.use('/api/customers', 
   authMiddleware, 
-  roleMiddleware(['admin']), // Admin has full access
+  roleMiddleware(['admin', 'worker']), // Admin and worker can access
   customerRoutes
 );
 
 app.use('/api/users', 
   authMiddleware, 
-  roleMiddleware(['admin']), // Admin and Owner only
+  roleMiddleware(['admin', 'worker']), // Admin and worker can access
   userRoutes
 );
 
 app.use('/api/agencies', 
   authMiddleware, 
-  roleMiddleware(['admin']), // Admin has full access
+  roleMiddleware(['admin', 'worker']), // Admin and worker can access
   agencyRoutes
 );
 
