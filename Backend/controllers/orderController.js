@@ -218,16 +218,18 @@ exports.getOrderPrintHtml = async (req, res) => {
 
       body {
         font-family: Arial, Helvetica, sans-serif;
-        background: #e3f0e8; /* light pastel like invoice paper */
-        font-size: 11px;
+        background: #ffffff; /* plain white for printing */
+        font-size: 18px; /* increased for stronger readability */
+        color: #111827;
+        line-height: 1.25;
       }
 
       .page {
         width: 19.5cm;
         min-height: 27.5cm;
         margin: 0 auto;
-        background: #f8fff9;
-        border: 1px solid #a3b8a5;
+        background: #ffffff; /* plain white page */
+        border: none; /* remove decorative border for printing */
         padding: 10mm 10mm 8mm 10mm;
         box-sizing: border-box;
       }
@@ -244,35 +246,36 @@ exports.getOrderPrintHtml = async (req, res) => {
       }
 
       .header-title {
-        font-size: 16px;
+        font-size: 22px;
         font-weight: 700;
         text-transform: uppercase;
       }
 
       .header-sub {
         margin-top: 2px;
-        font-size: 10px;
+        font-size: 14px;
       }
 
       .header-right {
         text-align: right;
-        font-size: 10px;
+        font-size: 14px;
       }
 
       .badge {
         display: inline-block;
-        padding: 2px 8px;
+        padding: 5px 10px;
         border-radius: 3px;
-        border: 1px solid #6b7280;
-        font-size: 9px;
+        border: 1px solid #9ca3af;
+        font-size: 14px;
         font-weight: 700;
         margin-top: 2mm;
+        background: transparent;
       }
 
       .section-box {
-        border: 1px solid #a3b8a5;
-        padding: 4px 6px;
-        margin-bottom: 4mm;
+        border: 1px solid #e5e7eb;
+        padding: 8px 10px;
+        margin-bottom: 6mm;
       }
 
       .section-title {
@@ -285,7 +288,7 @@ exports.getOrderPrintHtml = async (req, res) => {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         column-gap: 10mm;
         row-gap: 1mm;
-        font-size: 10px;
+        font-size: 13px;
       }
 
       .meta-label {
@@ -297,21 +300,21 @@ exports.getOrderPrintHtml = async (req, res) => {
       table.invoice-table {
         width: 100%;
         border-collapse: collapse;
-        border: 1px solid #a3b8a5;
-        font-size: 10px;
+        border: 1px solid #e5e7eb;
+        font-size: 15px;
       }
 
       table.invoice-table th,
       table.invoice-table td {
-        border: 1px solid #a3b8a5;
-        padding: 2px 3px;
+        border: 1px solid #e5e7eb;
+        padding: 10px 12px;
         text-align: center;
         vertical-align: middle;
         word-wrap: break-word;
       }
 
       table.invoice-table th {
-        background: #d7e7db;
+        background: #ffffff;
         font-weight: 700;
       }
 
@@ -322,7 +325,7 @@ exports.getOrderPrintHtml = async (req, res) => {
         margin-top: 3mm;
         display: flex;
         justify-content: space-between;
-        font-size: 10px;
+        font-size: 13px;
       }
 
       .summary-left {
@@ -340,8 +343,14 @@ exports.getOrderPrintHtml = async (req, res) => {
       }
 
       .summary-table td {
-        padding: 3px 4px;
-        border: 1px solid #a3b8a5;
+        padding: 8px 10px;
+        border: 1px solid #e5e7eb;
+        font-size: 14px; /* moderate label text */
+      }
+
+      .summary-table td.text-right {
+        font-weight: 700;
+        font-size: 16px; /* emphasized amounts, but not too large */
       }
 
       .footer-row {
@@ -472,12 +481,28 @@ exports.getOrderPrintHtml = async (req, res) => {
     </div>
 
     <script>
-      window.onload = function() {
-        setTimeout(function() { window.print(); }, 400);
-      };
-      window.onafterprint = function() {
-        try { window.location.href = '/orders'; } catch (e) {}
-      };
+      (function() {
+        if (window.__printHandled) return;
+        window.__printHandled = true;
+
+        function doPrint() {
+          try {
+            window.print();
+          } catch (e) {
+            console.error('Print failed', e);
+          }
+        }
+
+        // Give browser a short time to render the written document
+        setTimeout(doPrint, 400);
+
+        // Redirect to orders page once print completes (one-time)
+        window.onafterprint = function() {
+          if (window.__afterPrintDone) return;
+          window.__afterPrintDone = true;
+          try { window.location.href = '/orders'; } catch (e) { console.error(e); }
+        };
+      })();
     </script>
   </body>
 </html>`;
