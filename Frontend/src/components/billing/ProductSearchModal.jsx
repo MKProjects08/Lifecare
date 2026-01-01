@@ -23,10 +23,19 @@ const ProductSearchModal = ({ onClose, onSelectProduct, selectedAgencyId }) => {
       const allProducts = await productService.getAllProducts();
       
       // Filter products based on search term and agency
-      let filtered = allProducts.filter(product => 
-        product.is_active === 1 && 
-        product.quantity > 0
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // avoid time issues
+
+    let filtered = allProducts.filter(product => {
+      const expiryDate = product.expiry_date ? new Date(product.expiry_date) : null;
+
+      return (
+        product.is_active === 1 &&
+        product.quantity > 0 &&
+        (!expiryDate || expiryDate > today) // 👈 exclude expired
       );
+    });
+
 
       // Apply search filter
       if (searchTerm) {

@@ -48,34 +48,38 @@ export const alertService = {
         return [];
       }
 
-      const today = new Date();
-      const sixtyDaysFromNow = new Date();
-      sixtyDaysFromNow.setDate(today.getDate() + 90);
+     const today = new Date();
+today.setHours(0, 0, 0, 0);
 
-      const expiryAlerts: ExpiryAlert[] = [];
+const ninetyDaysFromNow = new Date();
+ninetyDaysFromNow.setHours(23, 59, 59, 999);
+ninetyDaysFromNow.setDate(today.getDate() + 90);
 
-      products.forEach(product => {
-        if (!product.expiry_date) return;
+const expiryAlerts: ExpiryAlert[] = [];
 
-        const expiryDate = new Date(product.expiry_date);
-        
-        // Check if expiry date is within next 60 days and not expired
-        if (expiryDate >= today && expiryDate <= sixtyDaysFromNow) {
-          const timeDiff = expiryDate.getTime() - today.getTime();
-          const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 3600 * 24));
+products.forEach(product => {
+  if (!product.expiry_date) return;
 
-          expiryAlerts.push({
-            Product_ID: product.Product_ID || product.id,
-            BatchNumber: product.BatchNumber,
-            productname: product.productname,
-            generic_name: product.generic_name,
-            expiry_date: product.expiry_date,
-            daysUntilExpiry,
-            quantity: product.quantity || 0,
-            AgencyName: product.AgencyName
-          });
-        }
-      });
+  const expiryDate = new Date(product.expiry_date);
+  expiryDate.setHours(0, 0, 0, 0);
+
+  if (expiryDate >= today && expiryDate <= ninetyDaysFromNow) {
+    const daysUntilExpiry = Math.ceil(
+      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    expiryAlerts.push({
+      Product_ID: product.Product_ID || product.id,
+      BatchNumber: product.BatchNumber,
+      productname: product.productname,
+      generic_name: product.generic_name,
+      expiry_date: product.expiry_date,
+      daysUntilExpiry,
+      quantity: product.quantity || 0,
+      AgencyName: product.AgencyName
+    });
+  }
+});
 
       // Sort by days until expiry (closest first)
       return expiryAlerts.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
