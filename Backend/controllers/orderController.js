@@ -101,6 +101,7 @@ exports.getOrderPrintHtml = async (req, res) => {
         o.*,
         CONCAT('O', LPAD(o.Order_ID, 5, '0')) AS FormattedOrderID,
         c.pharmacyname AS CustomerName,
+        c.address AS CustomerAddress,
         a.agencyname AS AgencyName,
         u.username AS UserName
       FROM Orders o
@@ -205,44 +206,45 @@ exports.getOrderPrintHtml = async (req, res) => {
     <style>
       @media print {
         @page {
-          margin: 0.7cm;
-          size: A4;
+          margin: 1cm 1cm 1cm 1cm;
+          size: A4 portrait;
         }
         body {
-          margin: 0;
-          padding: 0;
+          margin: 0 !important;
+          padding: 0 !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+        }
+        .page {
+          margin: 0 !important;
+          padding: 8mm 10mm !important;
+          width: 100% !important;
         }
       }
 
       body {
         font-family: Arial, Helvetica, sans-serif;
-        background: #ffffff; /* plain white for printing */
-        font-size: 18px; /* increased for stronger readability */
+        background: #ffffff;
+        font-size: 18px;
         color: #111827;
         line-height: 1.25;
+        margin: 0;
+        padding: 0;
       }
 
       .page {
         width: 19.5cm;
         min-height: 27.5cm;
         margin: 0 auto;
-        background: #ffffff; /* plain white page */
-        border: none; /* remove decorative border for printing */
+        background: #ffffff;
+        border: none;
         padding: 10mm 10mm 8mm 10mm;
         box-sizing: border-box;
       }
 
       .header-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 6mm;
-      }
-
-      .header-left {
-        max-width: 60%;
+        text-align: center;
+        margin-bottom: 8mm;
       }
 
       .header-title {
@@ -256,9 +258,22 @@ exports.getOrderPrintHtml = async (req, res) => {
         font-size: 14px;
       }
 
-      .header-right {
-        text-align: right;
+      .invoice-customer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6mm;
+        gap: 10mm;
+      }
+
+      .invoice-info {
+        flex: 1;
         font-size: 14px;
+      }
+
+      .customer-info {
+        flex: 1;
+        font-size: 12px;
       }
 
       .badge {
@@ -354,7 +369,7 @@ exports.getOrderPrintHtml = async (req, res) => {
       }
 
       .footer-row {
-        margin-top: 8mm;
+        margin-top: 50mm;
         display: flex;
         justify-content: space-between;
         font-size: 10px;
@@ -372,7 +387,8 @@ exports.getOrderPrintHtml = async (req, res) => {
       .bottom-note {
         margin-top: 6mm;
         text-align: center;
-        font-size: 9px;
+        font-size: 12px;
+        font-weight: 600;
       }
 
       .back-button {
@@ -391,22 +407,23 @@ exports.getOrderPrintHtml = async (req, res) => {
   <body>
     <div class="page">
       <div class="header-row">
-        <div class="header-left">
-          <div class="header-title">Life Care Distribution</div>
-          <div class="header-sub">Pharmaceutical Distribution Services</div>
-          <div class="header-sub">Life Care Pharmacy, K.k.s Road, Maviddapuram, Jaffna</div>
-          <div class="header-sub">Tel: 0764671013 (Distribution & Pharmacy)</div>
-        </div>
-        <div class="header-right">
-          <div>Invoice No: <strong>${escapeHtml(order.FormattedOrderID || order.Order_ID)}</strong></div>
-          <div>Date: <strong>${escapeHtml(formatDate(order.created_at || order.order_date))}</strong></div>
-          <div class="badge">${printBadgeText}</div>
-        </div>
+        <div class="header-title">Life Care Pharmacy</div>
+        <div class="header-sub">Pharmaceutical Distribution Services</div>
+        <div class="header-sub">Life Care Pharmacy, K.k.s Road, Maviddapuram, Jaffna</div>
+        <div class="header-sub">Tel: 0764671013 (Distribution & Pharmacy)</div>
       </div>
 
-      <div class="section-box">
-        <div class="section-title">Customer</div>
-        <div>${escapeHtml(order.CustomerName || order.customer_name || 'N/A')}</div>
+      <div class="invoice-customer-row">
+        <div class="invoice-info">
+          <div><strong>Invoice No:</strong> ${escapeHtml(order.FormattedOrderID || order.Order_ID)}</div>
+          <div><strong>Date:</strong> ${escapeHtml(formatDate(order.created_at || order.order_date))}</div>
+          <div class="badge">${printBadgeText}</div>
+        </div>
+        <div class="customer-info section-box">
+          <div class="section-title">Customer</div>
+          <div style="font-size:14px;font-weight:600;">${escapeHtml(order.CustomerName || order.customer_name || 'N/A')}</div>
+          <div style="margin-top:2px;color:#374151;font-size:13px;">${escapeHtml(order.CustomerAddress || order.customer_address || '')}</div>
+        </div>
       </div>
 
       <div class="meta-grid section-box" style="margin-bottom:5mm;">
@@ -453,10 +470,6 @@ exports.getOrderPrintHtml = async (req, res) => {
                 <td class="text-left">Gross Amount</td>
                 <td class="text-right">${format(grossTotal)}</td>
               </tr>
-              <tr>
-                <td class="text-left">Total Discount</td>
-                <td class="text-right">${format(discountAmount)}</td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -467,6 +480,9 @@ exports.getOrderPrintHtml = async (req, res) => {
           <div><strong>Customer Signature</strong></div>
           <div class="signature-line"></div>
         </div>
+        <div class="signature-box" style="text-align:center;">
+          <div style="font-size:16px;"><strong>45 Days Credit Only</strong></div>
+        </div>
         <div class="signature-box" style="text-align:right;">
           <div><strong>Authorized Signature</strong></div>
           <div class="signature-line"></div>
@@ -475,8 +491,8 @@ exports.getOrderPrintHtml = async (req, res) => {
 
       <div class="bottom-note">
         <div>Thank you for your business!</div>
-        <div style="color:#6b7280;">This is a computer-generated invoice by Life Care Distribution </div>
-        <div style="color:#6b7280;">Powered by MK Projects (0778146469) © 2025</div>
+        <div>This is a computer-generated invoice by Life Care Distribution </div>
+        <div>Powered by MK Projects (0778146469) © 2025</div>
       </div>
     </div>
 
