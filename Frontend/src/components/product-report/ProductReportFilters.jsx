@@ -2,7 +2,7 @@ import React from "react";
 
 const ProductReportFilters = ({ filters, agencies, onChange, onApply, onReset }) => {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+    <div>
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
