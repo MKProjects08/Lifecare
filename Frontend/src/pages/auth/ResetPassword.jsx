@@ -93,7 +93,7 @@ const ResetPassword = () => {
         localStorage.removeItem("resetEmail");
         localStorage.removeItem("username");
 
-        setTimeout(() => navigate("/signin"), 1500);
+        setTimeout(() => navigate("/"), 1500);
       } else {
         toast.error(data.message || "Failed to reset password");
         if (data.message && data.message.includes("temporary password")) {
