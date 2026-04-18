@@ -12,6 +12,7 @@ const agencyRoutes = require('./routes/agencies');
 const authRoutes = require('./routes/authroute');
 const analyticsRoutes = require('./routes/analytics');
 const backupRoutes = require('./routes/backup');
+const productReportRoutes = require('./routes/productReport');
 const { authMiddleware, roleMiddleware } = require('./middleware/authmiddleware');
 
 const app = express();
@@ -75,6 +76,12 @@ app.use('/api/backup',
   authMiddleware,
   roleMiddleware(['admin']),
   backupRoutes
+);
+
+app.use('/api/product-report',
+  authMiddleware,
+  roleMiddleware(['admin', 'worker']),
+  productReportRoutes
 );
 
 // Dashboard routes
