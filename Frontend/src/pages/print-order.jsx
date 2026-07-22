@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { orderService } from '../services/orderService';
+import { CloudCog } from 'lucide-react';
 
 const PrintOrder = () => {
   const { id } = useParams();
@@ -25,11 +26,12 @@ const PrintOrder = () => {
         }
 
         const html = await orderService.getOrderPrintHtml(id);
-
+console.log(html);
         // Render printable HTML directly in the same tab
         document.open();
         document.write(html);
         document.close();
+        console.log('HTML printed');
       } catch (e) {
         console.error('Failed to open printable invoice:', e);
         setError('Failed to open invoice for printing: ' + (e.message || 'Unknown error'));

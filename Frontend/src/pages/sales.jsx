@@ -35,6 +35,15 @@ const Sales = () => {
     }
   };
 
+  const handleDownloadExcel = async () => {
+    try {
+      await analyticsService.downloadSalesReportExcel(filters);
+    } catch (e) {
+      console.error('Failed to download sales report Excel:', e);
+      alert('Failed to download sales report Excel: ' + (e.message || 'Unknown error'));
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -60,6 +69,15 @@ const Sales = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V4a2 2 0 012-2h8a2 2 0 012 2v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1M10 18h4" />
             </svg>
             Print
+          </button>
+          <button
+            onClick={handleDownloadExcel}
+            className="bg-white border border-[#29996B] text-[#29996B] px-4 py-2 rounded-lg hover:bg-[#E1F2F5] flex items-center transition-colors duration-200"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Excel
           </button>
         </div>
       </div>

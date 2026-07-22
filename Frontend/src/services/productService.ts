@@ -279,6 +279,51 @@ export const productService = {
       console.error('Error in productService.getProductsReportPrintHtml:', error);
       throw error;
     }
+  },
+
+  downloadProductsReportExcel: async (filters: {
+    agency?: string;
+    productName?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<void> => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+      }
+
+      const params = new URLSearchParams();
+      const add = (key: string, value?: string) => {
+        if (value && value.trim() !== '') params.append(key, value.trim());
+      };
+
+      add('agency', filters.agency);
+      add('productName', filters.productName);
+      add('startDate', filters.startDate);
+      add('endDate', filters.endDate);
+
+      const url = `${API_BASE_URL}/products/report/excel?${params.toString()}`;
+      const response = await fetch(url, { method: 'GET', headers: getHeaders() });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = 'product-inventory-report.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error in productService.downloadProductsReportExcel:', error);
+      throw error;
+    }
   }
 };
 

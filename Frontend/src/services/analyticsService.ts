@@ -132,4 +132,49 @@ export const analyticsService = {
 
     return res.text();
   },
+
+  downloadSalesReportExcel: async (filters: {
+    customer?: string;
+    agency?: string;
+    user?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
+    paidStartDate?: string;
+    paidEndDate?: string;
+  }): Promise<void> => {
+    ensureAuth();
+
+    const params = new URLSearchParams();
+    const add = (key: string, value?: string) => {
+      if (value && value.trim() !== '') params.append(key, value.trim());
+    };
+
+    add('customer', filters.customer);
+    add('agency', filters.agency);
+    add('user', filters.user);
+    add('paymentStatus', filters.paymentStatus);
+    add('startDate', filters.startDate);
+    add('endDate', filters.endDate);
+    add('paidStartDate', filters.paidStartDate);
+    add('paidEndDate', filters.paidEndDate);
+
+    const url = `${API_BASE_URL}/analytics/sales-report/excel?${params.toString()}`;
+    const res = await fetch(url, { headers: getHeaders() });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = 'sales-report.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  },
 };
