@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const XLSX = require("xlsx");
 
 // Helper to fill missing dates over last N days
 function getLastNDates(n) {
@@ -470,6 +471,133 @@ exports.getSalesReportPrintHtml = async (req, res) => {
   } catch (err) {
     console.error('Error in getSalesReportPrintHtml:', err);
     res.status(500).send('<h1>Failed to generate sales report</h1>');
+  }
+};
+
+// Excel sales report with the same filters as print
+exports.getSalesReportExcel = async (req, res) => {
+  try {
+    const {
+      customer = '',
+      agency = '',
+      user = '',
+      paymentStatus = 'all',
+      startDate = '',
+      endDate = '',
+      paidStartDate = '',
+      paidEndDate = ''
+    } = req.query;
+
+    const where = [];
+    const params = [];
+
+    where.push('o.print_count IS NOT NULL AND o.print_count > 0');
+
+    if (customer) {
+      where.push('o.Customer_ID = ?');
+      params.push(customer);
+    }
+    if (agency) {
+      where.push('o.Agency_ID = ?');
+      params.push(agency);
+    }
+    if (user) {
+      where.push('o.User_ID = ?');
+      params.push(user);
+    }
+    if (paymentStatus && paymentStatus !== 'all') {
+      where.push('LOWER(o.paymentstatus) = LOWER(?)');
+      params.push(paymentStatus);
+    }
+
+    if (startDate) {
+      where.push('DATE(o.created_at) >= ?');
+      params.push(startDate);
+    }
+    if (endDate) {
+      where.push('DATE(o.created_at) <= ?');
+      params.push(endDate);
+    }
+
+    if (paidStartDate) {
+      where.push('o.paid_date IS NOT NULL AND DATE(o.paid_date) >= ?');
+      params.push(paidStartDate);
+    }
+    if (paidEndDate) {
+      where.push('o.paid_date IS NOT NULL AND DATE(o.paid_date) <= ?');
+      params.push(paidEndDate);
+    }
+
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+    const [rows] = await db.query(
+      `SELECT 
+         o.Order_ID,
+         CONCAT('O', LPAD(o.Order_ID, 5, '0')) AS FormattedOrderID,
+         o.Customer_ID,
+         o.Agency_ID,
+         o.User_ID,
+         o.created_at,
+         o.paid_date,
+         o.paymentstatus,
+         o.gross_total,
+         o.discount_amount,
+         c.pharmacyname AS CustomerName,
+         a.agencyname AS AgencyName,
+         u.username AS UserName
+       FROM Orders o
+       LEFT JOIN Customers c ON o.Customer_ID = c.Customer_ID
+       JOIN Agency a ON o.Agency_ID = a.Agency_ID
+       JOIN Users u ON o.User_ID = u.User_ID
+       ${whereSql}
+       ORDER BY o.created_at ASC, o.Order_ID ASC`,
+      params
+    );
+
+    const formatDate = (d) => {
+      if (!d) return '';
+      try {
+        return new Date(d).toLocaleDateString('en-GB');
+      } catch {
+        return '';
+      }
+    };
+
+    const sheetData = rows.map((r, idx) => ({
+      No: idx + 1,
+      'Order ID': r.FormattedOrderID,
+      Customer: r.CustomerName || 'N/A',
+      Agency: r.AgencyName || 'N/A',
+      User: r.UserName || 'N/A',
+      'Order Date': formatDate(r.created_at),
+      Gross: parseFloat(r.gross_total) || 0,
+      Discount: parseFloat(r.discount_amount) || 0,
+      'Payment Status': r.paymentstatus || '',
+      'Paid Date': formatDate(r.paid_date),
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(sheetData.length ? sheetData : [{
+      No: '',
+      'Order ID': 'No sales match the selected filters',
+      Customer: '',
+      Agency: '',
+      User: '',
+      'Order Date': '',
+      Gross: '',
+      Discount: '',
+      'Payment Status': '',
+      'Paid Date': '',
+    }]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="sales-report.xlsx"');
+    res.send(buffer);
+  } catch (err) {
+    console.error('Error in getSalesReportExcel:', err);
+    res.status(500).json({ error: 'Failed to generate sales report Excel' });
   }
 };
 

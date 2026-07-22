@@ -1,4 +1,5 @@
 const db = require("../config/db"); // this is your mysql2/promise pool
+const XLSX = require("xlsx");
 
 // ✅ Get all products
 exports.getAllProducts = async (req, res) => {
@@ -366,5 +367,107 @@ exports.getProductsReportPrintHtml = async (req, res) => {
   } catch (err) {
     console.error('Error in getProductsReportPrintHtml:', err);
     res.status(500).send('<h1>Failed to generate products report</h1>');
+  }
+};
+
+// Excel product inventory report with the same filters as print
+exports.getProductsReportExcel = async (req, res) => {
+  try {
+    const {
+      agency = '',
+      productName = '',
+      startDate = '',
+      endDate = ''
+    } = req.query;
+
+    const where = ['p.is_active = 1'];
+    const params = [];
+
+    if (agency) {
+      where.push('LOWER(a.agencyname) LIKE LOWER(?)');
+      params.push('%' + agency + '%');
+    }
+
+    if (productName) {
+      where.push('LOWER(p.productname) LIKE LOWER(?)');
+      params.push('%' + productName + '%');
+    }
+
+    if (startDate) {
+      where.push('DATE(p.created_at) >= ?');
+      params.push(startDate);
+    }
+    if (endDate) {
+      where.push('DATE(p.created_at) <= ?');
+      params.push(endDate);
+    }
+
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+    const [rows] = await db.query(
+      `SELECT 
+         p.Product_ID,
+         p.BatchNumber,
+         p.productname,
+         p.generic_name,
+         p.quantity,
+         p.expiry_date,
+         p.selling_price,
+         p.created_at,
+         p.Agency_ID,
+         a.agencyname AS AgencyName
+       FROM products p
+       LEFT JOIN Agency a ON p.Agency_ID = a.Agency_ID
+       ${whereSql}
+       ORDER BY p.productname ASC, p.BatchNumber ASC`,
+      params
+    );
+
+    const formatDate = (d) => {
+      if (!d) return '';
+      try {
+        return new Date(d).toLocaleDateString('en-GB');
+      } catch {
+        return '';
+      }
+    };
+
+    const sheetData = rows.map((r, idx) => {
+      const qty = parseFloat(r.quantity) || 0;
+      const rate = parseFloat(r.selling_price) || 0;
+      return {
+        No: idx + 1,
+        Batch: r.BatchNumber || '',
+        'Product Name': r.productname || '',
+        'Generic Name': r.generic_name || '',
+        Qty: qty,
+        Expiry: formatDate(r.expiry_date),
+        Agency: r.AgencyName || '',
+        Rate: rate,
+        Value: qty * rate,
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(sheetData.length ? sheetData : [{
+      No: '',
+      Batch: 'No products match the selected filters',
+      'Product Name': '',
+      'Generic Name': '',
+      Qty: '',
+      Expiry: '',
+      Agency: '',
+      Rate: '',
+      Value: '',
+    }]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventory Report');
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="product-inventory-report.xlsx"');
+    res.send(buffer);
+  } catch (err) {
+    console.error('Error in getProductsReportExcel:', err);
+    res.status(500).json({ error: 'Failed to generate products report Excel' });
   }
 };

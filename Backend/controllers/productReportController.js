@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const XLSX = require("xlsx");
 
 exports.getProductSalesReport = async (req, res) => {
   try {
@@ -293,5 +294,119 @@ exports.getProductSalesReportPrintHtml = async (req, res) => {
   } catch (err) {
     console.error("Error in getProductSalesReportPrintHtml:", err);
     res.status(500).send("<h1>Failed to generate product sales report</h1>");
+  }
+};
+
+// Excel product sales report with the same filters as print
+exports.getProductSalesReportExcel = async (req, res) => {
+  try {
+    const { startDate, endDate, agencyId } = req.query;
+
+    const whereParts = ["o.print_count > 0"];
+    const params = [];
+
+    if (agencyId) {
+      whereParts.push("o.Agency_ID = ?");
+      params.push(agencyId);
+    }
+
+    if (startDate) {
+      whereParts.push("DATE(o.created_at) >= ?");
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      whereParts.push("DATE(o.created_at) <= ?");
+      params.push(endDate);
+    }
+
+    const whereClause = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
+
+    const [rows] = await db.query(
+      `
+      SELECT
+        p.Product_ID,
+        p.productname,
+        p.generic_name,
+        oi.BatchNumber,
+        p.expiry_date,
+        p.selling_price,
+        a.agencyname AS AgencyName,
+        SUM(COALESCE(oi.quantity, 0)) AS sold_quantity,
+        SUM(COALESCE(oi.free_issue_quantity, 0)) AS free_issue_quantity,
+        COUNT(DISTINCT o.Order_ID) AS order_count,
+        MAX(o.created_at) AS last_sale_date
+      FROM OrderItem oi
+      INNER JOIN Orders o ON o.Order_ID = oi.Order_ID
+      LEFT JOIN products p
+        ON p.Product_ID = oi.Product_ID
+       AND p.BatchNumber = oi.BatchNumber
+      LEFT JOIN Agency a ON p.Agency_ID = a.Agency_ID
+      ${whereClause}
+      GROUP BY
+        p.Product_ID,
+        p.productname,
+        p.generic_name,
+        oi.BatchNumber,
+        p.expiry_date,
+        p.selling_price,
+        a.agencyname
+      ORDER BY sold_quantity DESC, p.productname ASC
+      `,
+      params
+    );
+
+    const formatDate = (d) => {
+      if (!d) return '';
+      try {
+        return new Date(d).toLocaleDateString('en-GB');
+      } catch {
+        return '';
+      }
+    };
+
+    const sheetData = rows.map((r, idx) => {
+      const soldQty = Number(r.sold_quantity) || 0;
+      const price = Number(r.selling_price) || 0;
+      return {
+        No: idx + 1,
+        Product: r.productname || 'Unknown Product',
+        'Generic Name': r.generic_name || '-',
+        Batch: r.BatchNumber || '',
+        'Exp Date': formatDate(r.expiry_date),
+        Agency: r.AgencyName || '-',
+        Price: price,
+        'Sold Qty': soldQty,
+        FOC: Number(r.free_issue_quantity) || 0,
+        'Total Value': price * soldQty,
+        'Order Count': Number(r.order_count) || 0,
+        'Last Sale Date': formatDate(r.last_sale_date),
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(sheetData.length ? sheetData : [{
+      No: '',
+      Product: 'No products match the selected filters',
+      'Generic Name': '',
+      Batch: '',
+      'Exp Date': '',
+      Agency: '',
+      Price: '',
+      'Sold Qty': '',
+      FOC: '',
+      'Total Value': '',
+      'Order Count': '',
+      'Last Sale Date': '',
+    }]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Product Sales');
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="product-sales-report.xlsx"');
+    res.send(buffer);
+  } catch (err) {
+    console.error("Error in getProductSalesReportExcel:", err);
+    res.status(500).json({ error: "Failed to generate product sales report Excel" });
   }
 };
